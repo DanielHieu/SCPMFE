@@ -98,11 +98,14 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
 
     function handleComplete(paymentContractId: number): void {
         console.log("handleComplete", paymentContractId);
-        fetchApi(`/Contract/Complete/${paymentContractId}`, {
+        fetchApi(`/Contract/Accept/${paymentContractId}`, {
             method: "POST",
         })
             .then(() => {
                 toast.success("Đã kiểm tra thanh toán hợp đồng thành công");
+                getPaymentContracts(contractId).then(paymentContracts => {
+                    setPaymentContracts(paymentContracts);
+                });
             })
             .catch((err) => {
                 toast.error("Lỗi khi kiểm tra thanh toán hợp đồng");
@@ -116,9 +119,31 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
         })
             .then(() => {
                 toast.success("Đã chấp nhận hợp đồng");
+
             })
             .catch((err) => {
                 toast.error("Lỗi khi chấp nhận hợp đồng");
+            });
+    }
+
+    function handleReject(paymentContractId: number): void {
+        const reason = prompt("Vui lòng nhập lý do từ chối:");
+        if (reason === null) return; // User cancelled the dialog
+
+        console.log("handleReject", paymentContractId, reason);
+        fetchApi(`/Contract/Reject/${paymentContractId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ reason }),
+        })
+            .then(() => {
+                toast.success("Đã từ chối hợp đồng");
+            })
+            .catch((err) => {
+                console.log(err);
+                toast.error("Lỗi khi từ chối hợp đồng");
             });
     }
 
@@ -242,12 +267,20 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{paymentContract?.paymentDate ? new Date(paymentContract.paymentDate).toLocaleDateString('vi-VN') : ''}</td>
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 {paymentContract.status === 'Pending' ? (
-                                                    <button
-                                                        onClick={() => handleApprove(paymentContract.paymentContractId)}
-                                                        className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                                                    >
-                                                        Chấp nhận
-                                                    </button>
+                                                    <div className="flex space-x-2">
+                                                        <button
+                                                            onClick={() => handleApprove(paymentContract.paymentContractId)}
+                                                            className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                                                        >
+                                                            Chấp nhận
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleReject(paymentContract.paymentContractId)}
+                                                            className="px-3 py-1 text-xs font-semibold rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
+                                                        >
+                                                            Từ chối
+                                                        </button>
+                                                    </div>
                                                 ) : paymentContract.status === 'Paid' ? (
                                                     <button
                                                         onClick={() => handleComplete(paymentContract.paymentContractId)}
