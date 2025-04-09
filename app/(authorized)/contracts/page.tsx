@@ -111,6 +111,7 @@ export default function ContractsPage() {
             // For demo purposes
             toast.success("Hợp đồng đã được thêm thành công");
             setIsAddModalOpen(false);
+
             fetchContracts();
         } catch (err) {
             toast.error("Lỗi khi thêm hợp đồng: " + (err instanceof Error ? err.message : "Unknown error"));
@@ -281,8 +282,8 @@ export default function ContractsPage() {
                                             <td className="px-6 py-4 font-medium">{contract.contractId}</td>
                                             <td className="px-6 py-4">{contract.car.customerName}</td>
                                             <td className="px-6 py-4">{contract.car.licensePlate}</td>
-                                            <td className="px-6 py-4">{formatDate(contract.startDate)}</td>
-                                            <td className="px-6 py-4">{formatDate(contract.endDate)}</td>
+                                            <td className="px-6 py-4">{contract.startDateString}</td>
+                                            <td className="px-6 py-4">{contract.endDateString}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${contract.status === 'Active' ? 'bg-green-100 text-green-800' :
                                                     contract.status === 'Expired' ? 'bg-red-100 text-red-800' :
@@ -292,7 +293,9 @@ export default function ContractsPage() {
                                                         contract.status === 'Expired' ? 'Đã hết hạn' : 'Chờ xử lý'}
                                                 </span>
                                             </td>
-                                            <td></td>
+                                            <td>
+                                                {contract.needToProcess ? 'Cần duyệt' : ''}
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <Link href={`/contracts/${contract.contractId}`}>
                                                     Chi tiết
@@ -306,76 +309,6 @@ export default function ContractsPage() {
                     </div>
                 )}
             </div>
-
-            <Dialog
-                open={isEditModalOpen}
-                onOpenChange={(open) => {
-                    if (!open) setEditingContract(null);
-                    setIsEditModalOpen(open);
-                }}
-            >
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>Chi tiết hợp đồng</DialogTitle>
-                    </DialogHeader>
-                    {editingContract && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Số hợp đồng</p>
-                                    <p className="text-base">{editingContract.contractId}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Khách hàng</p>
-                                    <p className="text-base">{editingContract.car.customerName}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Ngày bắt đầu</p>
-                                    <p className="text-base">{formatDate(editingContract.startDate)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Ngày kết thúc</p>
-                                    <p className="text-base">{formatDate(editingContract.endDate)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Trạng thái</p>
-                                    <p className={`text-base ${editingContract.status === 'Active' ? 'text-green-600' :
-                                        editingContract.status === 'Expired' ? 'text-red-600' :
-                                            'text-yellow-600'
-                                        }`}>
-                                        {editingContract.status === 'Active' ? 'Đang hoạt động' :
-                                            editingContract.status === 'Expired' ? 'Đã hết hạn' : 'Chờ xử lý'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Giá trị hợp đồng</p>
-                                    <p className="text-base font-medium">{formatCurrency(editingContract.paymentContract?.paymentAmount)}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsEditModalOpen(false)}
-                                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                                >
-                                    Đóng
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => {
-                                        handleUpdateContract(editingContract);
-                                    }}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                >
-                                    Cập nhật
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

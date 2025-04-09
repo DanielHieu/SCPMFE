@@ -19,11 +19,11 @@ export interface Contract {
     customerName: string;
     customerId: string;
   };
-  paymentContract: PaymentContract;
   createdDate: string;
   updatedDate: string;
   startDateString: string;
   endDateString: string;
+  needToProcess: boolean;
 }
 
 export enum ContractStatus {
