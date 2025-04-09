@@ -168,15 +168,15 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Ngày tạo</p>
-                                <p className="mt-1">{formatDate(contract.createdDate, 'dd/MM/yyyy')}</p>
+                                <p className="mt-1">{contract.createdDate}</p>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Ngày bắt đầu</p>
-                                <p className="mt-1">{formatDate(contract.startDate, 'dd/MM/yyyy')}</p>
+                                <p className="mt-1">{contract.startDate}</p>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Ngày kết thúc</p>
-                                <p className="mt-1">{formatDate(contract.endDate, 'dd/MM/yyyy')}</p>
+                                <p className="mt-1">{contract.endDate}</p>
                             </div>
                             {contract.note && (
                                 <div className="md:col-span-2">
