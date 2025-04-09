@@ -98,7 +98,7 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
 
     function handleComplete(paymentContractId: number): void {
         console.log("handleComplete", paymentContractId);
-        fetchApi(`/Contract/Complete/${paymentContractId}`, {
+        fetchApi(`/Contract/Accept/${paymentContractId}`, {
             method: "POST",
         })
             .then(() => {
