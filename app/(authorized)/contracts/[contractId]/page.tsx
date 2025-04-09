@@ -1,14 +1,13 @@
-
 import React from "react";
 import ContractDetailComponent from "@/components/contracts/ContractDetailComponent";
 
-interface ContractDetailPageProps {
-  params: {
-    contractId: number;
-  };
-}
+type Params = Promise<{ contractId: number }>
 
-const ContractDetailPage = async ({ params }: ContractDetailPageProps) => {
+const ContractDetailPage = async ({
+  params,
+}: {
+  params: Params;
+}) => {
   const { contractId } = await params;
   return <ContractDetailComponent contractId={contractId} />;
 };

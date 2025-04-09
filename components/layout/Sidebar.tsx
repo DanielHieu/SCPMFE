@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CalendarDays,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -9,7 +8,6 @@ import {
   Users,
   Wifi,
   X,
-  LogIn,
   ChevronRight
 } from "lucide-react";
 import Link from "next/link";
@@ -39,9 +37,7 @@ const sidebarItems: NavItem[] = [
   { label: "Hợp đồng", href: "/contracts", icon: FileText },
   { label: "Bãi đậu xe", href: "/parkinglots", icon: ParkingSquare },
   { label: "Nhiệm vụ", href: "/tasks", icon: ClipboardList },
-  { label: "Lịch trình", href: "/schedule", icon: CalendarDays },
-  { label: "Cảm biến trạng thái", href: "/sensors", icon: Wifi },
-  { label: "Lịch sử đăng nhập", href: "/login-history", icon: LogIn },
+  { label: "Cảm biến trạng thái", href: "/sensors", icon: Wifi }
 ];
 
 interface SidebarProps {

@@ -8,14 +8,74 @@ const EXTERNAL_API_BASE_URL = process.env.EXTERNAL_API_URL || "https://api.examp
  * Uses [...slug] catch-all route to forward requests to external APIs
  * Doesn't require authentication tokens
  */
-async function handler(
+type Params = Promise<{ slug: string[] }>
+
+export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string[] } },
+  { params }: { params: Params },
+) {
+  const { slug } = await params;
+  return handleRequest(request, { slug });
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Params },
+) {
+  const { slug } = await params;
+  return handleRequest(request, { slug });
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Params },
+) {
+  const { slug } = await params;
+  return handleRequest(request, { slug });
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Params },
+) {
+  const { slug } = await params;
+  return handleRequest(request, { slug });
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Params },
+) {
+  const { slug } = await params;
+  return handleRequest(request, { slug });
+}
+
+export async function OPTIONS(
+  request: NextRequest,
+  { params }: { params: Params },
+) {
+  const { slug } = await params;
+  return handleRequest(request, { slug });
+}
+
+export async function HEAD(
+  request: NextRequest,
+  { params }: { params: Params },
+) {
+  const { slug } = await params;
+  return handleRequest(request, { slug });
+}
+
+/**
+ * Common handler function for all HTTP methods
+ */
+async function handleRequest(
+  request: NextRequest,
+  { slug }: { slug: string[] },
 ) {
   console.log(`[EXTERNAL PROXY] Request received: ${request.method} ${request.nextUrl.pathname}`);
 
   // Get path segments from the slug
-  const { slug } = await params;
   const targetPath = slug.join("/");
 
   // Get query parameters
@@ -51,9 +111,7 @@ async function handler(
       body:
         request.method !== "GET" && request.method !== "HEAD"
           ? await request.text() // Use text to preserve any content type
-          : null,
-      // @ts-ignore
-      duplex: "half", // Required by Node.js fetch when streaming request body
+          : undefined,
     });
 
     console.log(`[EXTERNAL PROXY] Response status: ${apiResponse.status}`);
@@ -83,14 +141,3 @@ async function handler(
     );
   }
 }
-
-// Export the handler for all HTTP methods
-export {
-  handler as GET,
-  handler as POST,
-  handler as PUT,
-  handler as DELETE,
-  handler as PATCH,
-  handler as OPTIONS,
-  handler as HEAD,
-}; 

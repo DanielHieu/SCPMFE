@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { ParkingSpace } from "@/types"; // Use your ParkingSpace type
+import { ParkingSpace, ParkingSpaceStatus } from "@/types"; // Use your ParkingSpace type
 import {
   ColumnDef,
   flexRender,
@@ -51,7 +51,7 @@ export function SpaceTable({
         header: "Status",
         size: 120,
         cell: ({ row }) => {
-          const isAvailable = row.original.status === 0; // 0 = Available, 1 = Not Available
+          const isAvailable = row.original.status === ParkingSpaceStatus.Available; // 0 = Available, 1 = Not Available
           return (
             <Badge
               variant={isAvailable ? "default" : "secondary"}

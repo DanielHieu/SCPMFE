@@ -51,8 +51,6 @@ export function SpaceForm({
     resolver: zodResolver(spaceFormSchema),
     defaultValues: {
       parkingSpaceName: initialData?.parkingSpaceName || "",
-      // Convert status number (0=Avail, 1=NotAvail) from API to boolean for Switch
-      isAvailable: initialData ? initialData.status === 0 : true, // Default to Available (0) -> true
     },
   });
 

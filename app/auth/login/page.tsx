@@ -49,7 +49,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="flex items-center justify-center min-h-screen">
       <div className="p-8 bg-white rounded-lg shadow-xl border border-gray-100 w-full max-w-md transition-all duration-300 hover:shadow-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Chào Mừng Trở Lại</h1>
