@@ -22,6 +22,8 @@ export interface Contract {
   paymentContract: PaymentContract;
   createdDate: string;
   updatedDate: string;
+  startDateString: string;
+  endDateString: string;
 }
 
 export enum ContractStatus {

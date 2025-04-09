@@ -1,7 +1,7 @@
 export interface PaymentContract {
   paymentContractId: number;
-  startDate: string;
-  endDate: string;
+  startDate: Date;
+  endDate: Date;
   paymentAmount: number;
   paymentMethod: string;
   pricePerMonth: number;
@@ -10,6 +10,8 @@ export interface PaymentContract {
   note: string;
   createdDate: Date;
   updatedDate: Date;
+  startDateString: string;
+  endDateString: string;
 }
 
 export enum PaymentContractStatus {

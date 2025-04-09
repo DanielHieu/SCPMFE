@@ -3,7 +3,6 @@
 import { getPaymentContracts } from "@/lib/api";
 import { fetchApi } from "@/lib/api/api-helper";
 import { Contract, ContractStatus, PaymentContract } from "@/types";
-import { formatDate } from "date-fns";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -172,11 +171,11 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Ngày bắt đầu</p>
-                                <p className="mt-1">{contract.startDate}</p>
+                                <p className="mt-1">{contract.startDateString}</p>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Ngày kết thúc</p>
-                                <p className="mt-1">{contract.endDate}</p>
+                                <p className="mt-1">{contract.endDateString}</p>
                             </div>
                             {contract.note && (
                                 <div className="md:col-span-2">
@@ -256,7 +255,10 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Mã thanh toán</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Số tiền</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Ngày thanh toán</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Ngày bắt đầu</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Ngày kết thúc</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Trạng thái</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Ghi chú</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -264,7 +266,9 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                         <tr key={paymentContract.paymentContractId} className="hover:bg-gray-50">
                                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">#{paymentContract.paymentContractId}</td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(paymentContract.paymentAmount || 0)}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{paymentContract?.paymentDate ? new Date(paymentContract.paymentDate).toLocaleDateString('vi-VN') : ''}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{paymentContract?.paymentDate ? paymentContract.paymentDate : ''}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{paymentContract?.startDateString ? paymentContract.startDateString : ''}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{paymentContract?.endDateString ? paymentContract.endDateString : ''}</td>
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 {paymentContract.status === 'Pending' ? (
                                                     <div className="flex space-x-2">
@@ -300,6 +304,9 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                                                     paymentContract.status}
                                                     </span>
                                                 )}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                {paymentContract.note}
                                             </td>
                                         </tr>
                                     ))}
