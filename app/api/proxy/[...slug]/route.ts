@@ -103,6 +103,11 @@ async function handleRequest(
     }
   });
 
+  // Add cache control headers to disable caching
+  headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+
   try {
     // Forward the request to the external API
     const apiResponse = await fetch(targetUrl, {
@@ -112,6 +117,7 @@ async function handleRequest(
         request.method !== "GET" && request.method !== "HEAD"
           ? await request.text() // Use text to preserve any content type
           : undefined,
+      cache: "no-store", // Disable caching
     });
 
     console.log(`[EXTERNAL PROXY] Response status: ${apiResponse.status}`);
@@ -122,6 +128,11 @@ async function handleRequest(
     ["transfer-encoding", "content-encoding", "content-length"].forEach(header => {
       responseHeaders.delete(header);
     });
+
+    // Add cache control headers to response
+    responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    responseHeaders.set("Pragma", "no-cache");
+    responseHeaders.set("Expires", "0");
 
     // Return the proxied response
     return new NextResponse(apiResponse.body, {
@@ -134,10 +145,17 @@ async function handleRequest(
 
     return NextResponse.json(
       {
-        message: "External proxy error: Failed to connect to external API.",
+        message: "Lỗi kết nối đến API bên ngoài",
         error: (error as Error).message,
       },
-      { status: 502 } // 502 Bad Gateway
+      { 
+        status: 502, // 502 Bad Gateway
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
+      }
     );
   }
 }

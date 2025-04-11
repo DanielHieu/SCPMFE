@@ -293,7 +293,7 @@ export default function ContractsPage() {
                                                         contract.status === 'Expired' ? 'Đã hết hạn' : 'Chờ xử lý'}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td className="px-6 py-4">
                                                 {contract.needToProcess ? 'Cần duyệt' : ''}
                                             </td>
                                             <td className="px-6 py-4">

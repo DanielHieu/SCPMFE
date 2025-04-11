@@ -12,11 +12,15 @@ export async function fetchApi(
 
   const headers = new Headers(options.headers || {});
   headers.set("Content-Type", "application/json");
+  // Add cache control headers
+  headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
 
   const config: RequestInit = {
     ...options,
     headers,
-    cache: options.cache || "default",
+    cache: "no-store", // Disable caching by default
   };
 
   const requestMethod = options.method || "GET";
@@ -38,7 +42,7 @@ export async function fetchApi(
   } catch (networkError) {
     // Handle network errors (e.g., proxy down, DNS issues)
     console.error(`Network error fetching ${absoluteProxyUrl}:`, networkError);
-    throw new Error(`Network error: Failed to connect to API proxy.`);
+    throw new Error(`Lỗi kết nối: Không thể kết nối đến API.`);
   }
 
   // --- Improved Response Handling ---
@@ -97,7 +101,7 @@ export async function fetchApi(
     // Handle error responses (4xx, 5xx)
     let errorBodyText = await response.text();
     console.error(`API Error Response Body for ${requestMethod} ${relativePath}: ${errorBodyText}`);
-    let errorMessage = `API Error (${response.status})`;
+    let errorMessage = `Lỗi API (${response.status})`;
     console.error(`API Error Response Status: ${response.status} ${response.statusText} for ${requestMethod} ${relativePath}`);
 
     try {
