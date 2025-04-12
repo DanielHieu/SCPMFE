@@ -33,12 +33,7 @@ import { AddContractForm } from "@/components/contracts/AddContractForm"; // Add
 
 // Import UI Components
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
+  Breadcrumb
 } from "@/components/ui/breadcrumb";
 import {
   Dialog,
@@ -228,22 +223,15 @@ export default function CustomerDetailPage() {
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
-        <Breadcrumb className="mb-2 px-1">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/dashboard">Trang chủ</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/customers">
-                Quản lý khách hàng
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Chi tiết khách hàng</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
+        <Breadcrumb items={[{
+          label: "Trang chủ",
+          href: "/dashboard",
+        }, {
+          label: "Quản lý khách hàng",
+          href: "/customers",
+        }, {
+          label: "Chi tiết khách hàng",
+        }]}>
         </Breadcrumb>
 
         {/* Page Header with Quick Info */}
