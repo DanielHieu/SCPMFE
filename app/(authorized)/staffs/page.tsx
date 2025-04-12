@@ -18,11 +18,6 @@ import useDebounce from "@/hooks/useDebounce";
 import { ListFilter, PlusCircle } from "lucide-react";
 import {
   Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
   DropdownMenu,
@@ -53,7 +48,7 @@ export default function StaffPage() {
       const data = await searchStaff({ keyword: term ?? "" });
       setAllStaff(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load staff");
+      setError(err instanceof Error ? err.message : "Không thể tải dữ liệu nhân viên");
       setAllStaff([]);
     } finally {
       setIsLoading(false);
@@ -90,11 +85,11 @@ export default function StaffPage() {
       await registerStaff({ ...formData, ownerId: ownerId });
       setIsAddModalOpen(false);
       refreshData();
-      alert("Staff member added successfully!");
+      alert("Thêm nhân viên thành công!");
     } catch (error) {
-      console.error("Failed to add staff:", error);
+      console.error("Không thể thêm nhân viên:", error);
       alert(
-        `Error adding staff: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Lỗi khi thêm nhân viên: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
       );
     }
   };
@@ -111,27 +106,22 @@ export default function StaffPage() {
 
   // Map filter status to display text
   const filterDisplayMap: Record<FilterStatus, string> = {
-    all: `All Staff (${counts.all})`,
-    active: `Active (${counts.active})`,
-    inactive: `Inactive (${counts.inactive})`,
+    all: `Tất cả nhân viên (${counts.all})`,
+    active: `Đang hoạt động (${counts.active})`,
+    inactive: `Không hoạt động (${counts.inactive})`,
   };
 
   return (
     <div className="container mx-auto py-6 space-y-4 md:space-y-6">
       {/* Header & Breadcrumbs */}
-      <Breadcrumb className="mb-4 px-1">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/dashboard">Owner Side</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Staff Management</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <Breadcrumb
+        items={[
+          { label: "Trang chủ", href: "/dashboard" },
+          { label: "Quản lý nhân viên" }
+        ]}
+      />
       <h1 className="text-xl md:text-2xl font-bold text-gray-800 px-1">
-        Staff Management
+        Quản lý nhân viên
       </h1>
 
       {/* Filters and Actions Bar */}
@@ -143,28 +133,28 @@ export default function StaffPage() {
             size="sm"
             onClick={() => setFilterStatus("all")}
           >
-            All Staffs ({counts.all})
+            Tất cả nhân viên ({counts.all})
           </Button>
           <Button
             variant={filterStatus === "active" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus("active")}
           >
-            Active ({counts.active})
+            Đang hoạt động ({counts.active})
           </Button>
           <Button
             variant={filterStatus === "inactive" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus("inactive")}
           >
-            Inactive ({counts.inactive})
+            Không hoạt động ({counts.inactive})
           </Button>
         </div> */}
 
         {/* Search and Add */}
         <div className="w-full md:w-auto md:flex-grow lg:max-w-md">
           <Input
-            placeholder="Search Name/Phone..."
+            placeholder="Tìm kiếm theo tên/số điện thoại..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-xs h-9"
@@ -180,12 +170,12 @@ export default function StaffPage() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">
                 <ListFilter className="w-4 h-4 mr-2" />
-                Filter: {filterDisplayMap[filterStatus]}{" "}
+                Lọc: {filterDisplayMap[filterStatus]}{" "}
                 {/* Show current filter */}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+              <DropdownMenuLabel>Lọc theo trạng thái</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {/* Use Radio items for single selection */}
               <DropdownMenuRadioGroup
@@ -195,13 +185,13 @@ export default function StaffPage() {
                 }
               >
                 <DropdownMenuRadioItem value="all">
-                  All Staffs ({counts.all})
+                  Tất cả nhân viên ({counts.all})
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="active">
-                  Active ({counts.active})
+                  Đang hoạt động ({counts.active})
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="inactive">
-                  Inactive ({counts.inactive})
+                  Không hoạt động ({counts.inactive})
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
@@ -209,12 +199,12 @@ export default function StaffPage() {
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="h-9">
-                <PlusCircle className="w-4 h-4 mr-2" /> Add Staff
+                <PlusCircle className="w-4 h-4 mr-2" /> Thêm nhân viên
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle>Add New Staff</DialogTitle>
+                <DialogTitle>Thêm nhân viên mới</DialogTitle>
               </DialogHeader>
               <StaffForm onSubmitAction={handleAddStaff} />
             </DialogContent>
@@ -224,9 +214,9 @@ export default function StaffPage() {
 
       {/* Table Area */}
       <div className="mt-4 rounded-lg overflow-hidden border border-gray-200 bg-white">
-        {isLoading && <div className="p-6 text-center">Loading staff...</div>}
+        {isLoading && <div className="p-6 text-center">Đang tải dữ liệu nhân viên...</div>}
         {error && (
-          <div className="p-6 text-center text-red-500">Error: {error}</div>
+          <div className="p-6 text-center text-red-500">Lỗi: {error}</div>
         )}
         {!isLoading && !error && (
           <StaffTable staff={filteredStaff} refreshDataAction={refreshData} />

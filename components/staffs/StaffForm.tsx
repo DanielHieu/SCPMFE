@@ -15,12 +15,12 @@ import { cn } from "@/lib/utils";
 
 // Schema based on RegisterStaffRequest [cite: 243]
 const staffFormSchema = z.object({
-  firstName: z.string().min(1, "Required"),
-  lastName: z.string().min(1, "Required"),
-  phone: z.string().min(10, "Min 10 digits"),
-  email: z.string().email("Invalid email"),
-  username: z.string().min(1, "Required").max(50),
-  password: z.string().min(6, "Min 6 chars").max(100),
+  firstName: z.string().min(1, "Bắt buộc"),
+  lastName: z.string().min(1, "Bắt buộc"),
+  phone: z.string().min(10, "Tối thiểu 10 số"),
+  email: z.string().email("Email không hợp lệ"),
+  username: z.string().min(1, "Bắt buộc").max(50),
+  password: z.string().min(6, "Tối thiểu 6 ký tự").max(100),
   isActive: z.boolean().default(true), // Matches 'isActive' in schema [cite: 243]
 });
 
@@ -58,7 +58,7 @@ export function StaffForm({
     >
       {/* First Name */}
       <div className="space-y-2">
-        <Label htmlFor="firstName">First Name</Label>
+        <Label htmlFor="firstName">Tên</Label>
         <Input id="firstName" {...register("firstName")} />
         {errors.firstName && (
           <p className="text-sm text-red-500">{errors.firstName.message}</p>
@@ -66,7 +66,7 @@ export function StaffForm({
       </div>
       {/* Last Name */}
       <div className="space-y-2">
-        <Label htmlFor="lastName">Last Name</Label>
+        <Label htmlFor="lastName">Họ</Label>
         <Input id="lastName" {...register("lastName")} />
         {errors.lastName && (
           <p className="text-sm text-red-500">{errors.lastName.message}</p>
@@ -82,7 +82,7 @@ export function StaffForm({
       </div>
       {/* Phone */}
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">Số điện thoại</Label>
         <Input id="phone" type="tel" {...register("phone")} />
         {errors.phone && (
           <p className="text-sm text-red-500">{errors.phone.message}</p>
@@ -90,7 +90,7 @@ export function StaffForm({
       </div>
       {/* Username */}
       <div className="space-y-2">
-        <Label htmlFor="username">Username</Label>
+        <Label htmlFor="username">Tên đăng nhập</Label>
         <Input id="username" {...register("username")} />
         {errors.username && (
           <p className="text-sm text-red-500">{errors.username.message}</p>
@@ -98,7 +98,7 @@ export function StaffForm({
       </div>
       {/* Password */}
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">Mật khẩu</Label>
         <Input id="password" type="password" {...register("password")} />
         {errors.password && (
           <p className="text-sm text-red-500">{errors.password.message}</p>
@@ -107,7 +107,7 @@ export function StaffForm({
       {/* Is Active Status */}
       <div className="space-y-2 flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
         <Label htmlFor="isActive" className="text-base">
-          Set Status to Active
+          Đặt trạng thái hoạt động
         </Label>
         <Controller
           name="isActive"
@@ -127,7 +127,7 @@ export function StaffForm({
       {/* Submit Button */}
       <div className="md:col-span-2 flex justify-end pt-4">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Adding..." : "Add Staff Member"}
+          {isSubmitting ? "Đang thêm..." : "Thêm nhân viên"}
         </Button>
       </div>
     </form>

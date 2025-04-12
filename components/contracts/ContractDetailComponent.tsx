@@ -12,26 +12,26 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const fetchContractDetail = async () => {
+        setIsLoading(true);
+        try {
+            const data = await fetchApi(`/Contract/GetById?id=${contractId}`, {
+                method: "GET",
+            });
+
+            const paymentContracts = await getPaymentContracts(contractId);
+
+            setContract(data);
+            setPaymentContracts(paymentContracts);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Đã xảy ra lỗi khi tải thông tin hợp đồng");
+            toast.error("Không thể tải thông tin hợp đồng");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchContractDetail = async () => {
-            setIsLoading(true);
-            try {
-                const data = await fetchApi(`/Contract/GetById?id=${contractId}`, {
-                    method: "GET",
-                });
-
-                const paymentContracts = await getPaymentContracts(contractId);
-
-                setContract(data);
-                setPaymentContracts(paymentContracts);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "Đã xảy ra lỗi khi tải thông tin hợp đồng");
-                toast.error("Không thể tải thông tin hợp đồng");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         if (contractId) {
             fetchContractDetail();
         }
@@ -102,9 +102,15 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
         })
             .then(() => {
                 toast.success("Đã kiểm tra thanh toán hợp đồng thành công");
-                getPaymentContracts(contractId).then(paymentContracts => {
-                    setPaymentContracts(paymentContracts);
-                });
+                fetchContractDetail()
+                    .then(() => {
+                        toast.dismiss();
+                        toast.success("Đã cập nhật thông tin hợp đồng");
+                    })
+                    .catch(() => {
+                        toast.dismiss();
+                        toast.error("Lỗi khi cập nhật thông tin hợp đồng");
+                    });
             })
             .catch((err) => {
                 toast.error("Lỗi khi kiểm tra thanh toán hợp đồng");
@@ -118,7 +124,15 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
         })
             .then(() => {
                 toast.success("Đã chấp nhận hợp đồng");
-
+                fetchContractDetail()
+                    .then(() => {
+                        toast.dismiss();
+                        toast.success("Đã cập nhật thông tin hợp đồng");
+                    })
+                    .catch(() => {
+                        toast.dismiss();
+                        toast.error("Lỗi khi cập nhật thông tin hợp đồng");
+                    });
             })
             .catch((err) => {
                 toast.error("Lỗi khi chấp nhận hợp đồng");
@@ -139,6 +153,16 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
         })
             .then(() => {
                 toast.success("Đã từ chối hợp đồng");
+                toast.loading("Đang cập nhật thông tin hợp đồng...");
+                fetchContractDetail()
+                    .then(() => {
+                        toast.dismiss();
+                        toast.success("Đã cập nhật thông tin hợp đồng");
+                    })
+                    .catch(() => {
+                        toast.dismiss();
+                        toast.error("Lỗi khi cập nhật thông tin hợp đồng");
+                    });
             })
             .catch((err) => {
                 console.log(err);

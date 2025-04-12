@@ -14,24 +14,19 @@ import { EditableStaffInfoCard } from "@/components/staffs/EditableStaffInfoCard
 // Import UI Components
 import {
   Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { 
-  CalendarClock, 
-  ClipboardList, 
-  Mail, 
-  Phone, 
-  UserCircle, 
-  Clock, 
+import {
+  CalendarClock,
+  ClipboardList,
+  Mail,
+  Phone,
+  UserCircle,
+  Clock,
   UsersRound,
   PlusCircle,
   Briefcase,
@@ -84,7 +79,7 @@ export default function StaffDetailPage() {
 
   const handleStatusChange = async (newStatus: boolean) => {
     if (!staffData) return;
-    
+
     try {
       const payload: UpdateStaffPayload = {
         staffAccountId: staffId,
@@ -95,7 +90,7 @@ export default function StaffDetailPage() {
         email: staffData.email,
         isActive: newStatus
       };
-      
+
       await updateStaff(payload);
       toast.success(`Staff status changed to ${newStatus ? 'Active' : 'Inactive'}`);
       fetchData(); // Refresh data
@@ -124,9 +119,9 @@ export default function StaffDetailPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <h3 className="text-lg font-medium text-red-600 mb-2">Error</h3>
           <p>{error}</p>
-          <Button 
-            variant="outline" 
-            className="mt-4" 
+          <Button
+            variant="outline"
+            className="mt-4"
             onClick={() => fetchData()}
           >
             Retry
@@ -147,21 +142,13 @@ export default function StaffDetailPage() {
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
-        <Breadcrumb className="mb-2 px-1">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/staffs">Quản lý nhân viên</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Chi tiết nhân viên</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        <Breadcrumb
+          items={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Quản lý nhân viên", href: "/staffs" },
+            { label: "Chi tiết nhân viên" }
+          ]}
+        />
 
         {/* Staff Header with Quick Info */}
         <div className="bg-white rounded-lg border shadow-sm p-6 mb-6">
@@ -177,7 +164,7 @@ export default function StaffDetailPage() {
                   <h1 className="text-2xl font-bold text-gray-800">
                     {staffData.firstName} {staffData.lastName}
                   </h1>
-                  <Badge 
+                  <Badge
                     variant={staffData.isActive ? "default" : "outline"}
                     className={staffData.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
                   >
@@ -225,7 +212,7 @@ export default function StaffDetailPage() {
                   </>
                 )}
               </Button>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -249,13 +236,13 @@ export default function StaffDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <EditableStaffInfoCard 
-                  initialData={staffData} 
-                  ownerId={ownerId} 
+                <EditableStaffInfoCard
+                  initialData={staffData}
+                  ownerId={ownerId}
                 />
               </CardContent>
             </Card>
-            
+
             {/* Scheduled Work Card */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -270,9 +257,9 @@ export default function StaffDetailPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   <CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-20" />
                   <p>Không có lịch làm việc</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="mt-4"
                   >
                     <PlusCircle className="w-4 h-4 mr-2" />
@@ -282,7 +269,7 @@ export default function StaffDetailPage() {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* Main content - 2/3 width */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue="tasks">
@@ -302,9 +289,9 @@ export default function StaffDetailPage() {
                     <div className="text-center py-8 text-muted-foreground">
                       <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-20" />
                       <p>Không có nhiệm vụ nào được giao cho nhân viên này</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="mt-4"
                       >
                         <PlusCircle className="w-4 h-4 mr-2" />

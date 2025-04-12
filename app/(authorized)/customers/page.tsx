@@ -2,14 +2,7 @@
 import { CustomerForm } from "@/components/customers/CustomerForm";
 import { CustomerTable } from "@/components/customers/CustomerTable";
 import { EditCustomerForm } from "@/components/customers/EditCustomerForm";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,7 +28,7 @@ import {
   RegisterCustomerPayload,
   UpdateCustomerPayload,
 } from "@/types";
-import { ListFilter, PlusCircle } from "lucide-react";
+import { ListFilter, PlusCircle, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -49,9 +42,7 @@ export default function CustomerPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -74,7 +65,7 @@ export default function CustomerPage() {
     }
   }, []);
 
-  // NOTE: Fetch when debounced search term changes
+  // Fetch when debounced search term changes
   useEffect(() => {
     fetchCustomers(debouncedSearchTerm);
   }, [debouncedSearchTerm, fetchCustomers]);
@@ -148,29 +139,38 @@ export default function CustomerPage() {
   );
 
   return (
-    <div className="container mx-auto py-6 space-y-4 md:space-y-6">
+    <div className="container mx-auto py-6 space-y-6">
+      {/* Header section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <Breadcrumb className="mb-2">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/dashboard">Quản lý hệ thống</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Quản lý khách hàng</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+          <Breadcrumb
+            items={[
+              { label: "Trang chủ", href: "/dashboard" },
+              { label: "Quản lý khách hàng" }
+            ]}
+          />
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
             Khách hàng
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+        {/* Action buttons */}
+        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+          {/* Search input */}
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Tìm kiếm khách hàng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 w-full"
+            />
+          </div>
+
+          {/* Filter dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
+              <Button variant="outline" size="sm" className="h-10 w-full md:w-auto">
                 <ListFilter className="w-4 h-4 mr-2" />
                 Lọc: {
                   {
@@ -178,10 +178,10 @@ export default function CustomerPage() {
                     active: "Đang hoạt động",
                     inactive: "Không hoạt động"
                   }[filterStatus]
-                }{" "}
+                }
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Lọc theo trạng thái</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuRadioGroup
@@ -202,9 +202,11 @@ export default function CustomerPage() {
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Add customer button */}
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-9">
+              <Button size="sm" className="h-10 w-full md:w-auto">
                 <PlusCircle className="w-4 h-4 mr-2" />
                 Thêm khách hàng
               </Button>
@@ -221,13 +223,22 @@ export default function CustomerPage() {
           </Dialog>
         </div>
       </div>
+
       {/* Table area */}
-      <div className="mt-4 rounded-lg overflow-hidden border border-gray-200 bg-white">
+      <div className="rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
         {isLoading && (
-          <div className="p-6 text-center">Loading customer...</div>
+          <div className="p-8 text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
+            <p className="mt-2 text-gray-500">Đang tải dữ liệu khách hàng...</p>
+          </div>
         )}
         {error && (
-          <div className="p-6 text-center text-red-500">Error: {error}</div>
+          <div className="p-8 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
+              <span className="text-red-500 text-xl">!</span>
+            </div>
+            <p className="text-red-500">Lỗi: {error}</p>
+          </div>
         )}
         {!isLoading && !error && (
           <CustomerTable
@@ -240,6 +251,7 @@ export default function CustomerPage() {
         )}
       </div>
 
+      {/* Edit customer dialog */}
       <Dialog
         open={isEditModalOpen}
         onOpenChange={(open) => {

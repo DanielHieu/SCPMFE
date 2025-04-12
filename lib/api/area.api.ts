@@ -1,4 +1,4 @@
-import { AddAreaPayload, Area, UpdateAreaPayload } from "@/types/area";
+import { AddAreaPayload, Area, RentalType, UpdateAreaPayload } from "@/types/area";
 import { fetchApi } from "./api-helper";
 
 // GET /api/proxy/Area/GetAreasByParkingLot?parkingLotId={lotId} [cite: 3]
@@ -14,7 +14,11 @@ export async function addArea(payload: AddAreaPayload): Promise<Area> {
   console.log("API Client: Adding Area");
   return await fetchApi(`/Area/Add`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      areaName: payload.areaName,
+      rentalType: payload.rentalType == RentalType.Contract ? 2 : 1,
+      parkingLotId: payload.parkingLotId,
+    }),
   });
 }
 

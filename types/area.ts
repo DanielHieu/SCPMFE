@@ -2,7 +2,7 @@ export interface Area {
   areaId: number;
   parkingLotId: number;
   areaName?: string;
-  totalFloor: number;
+  totalFloors: number;
   status: number;
   rentalType: RentalType;
   floors?: string[];

@@ -8,11 +8,6 @@ import { toast } from "sonner";
 // Import UI Components
 import {
   Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +16,6 @@ import {
   PlusCircle,
   MapPin,
   Calendar,
-  DollarSign,
   Building,
   Info,
   Car,
@@ -493,8 +487,7 @@ export default function ParkingLotDetailPage() {
     try {
       await addFloor({
         areaId: selectedArea,
-        floorName: newFloorName,
-        status: 1 // Mặc định là active
+        floorName: newFloorName
       });
 
       console.log(`[ParkingLotDetail] Floor added successfully: ${newFloorName}`);
@@ -598,23 +591,13 @@ export default function ParkingLotDetailPage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Breadcrumbs */}
-      <Breadcrumb className="px-1">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/dashboard">Trang chủ</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/parkinglots">Quản lý bãi đỗ xe</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>
-              {lotData.address || `Bãi đỗ xe ${lotId}`}
-            </BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <Breadcrumb
+        items={[
+          { label: "Trang chủ", href: "/dashboard" },
+          { label: "Quản lý bãi đỗ xe", href: "/parkinglots" },
+          { label: lotData.address || `Bãi đỗ xe ${lotId}` }
+        ]}
+      />
 
       {/* Header with basic info and actions */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -636,19 +619,19 @@ export default function ParkingLotDetailPage() {
             </div>
             <div className="flex flex-wrap gap-4 mt-3">
               <div className="flex items-center border px-2.5 py-1 rounded-full bg-blue-50 border-blue-200">
-                <DollarSign className="h-3.5 w-3.5 text-blue-600 mr-1" />
+                <span className="text-xl mr-1 text-blue-600">₫</span>
                 <span className="text-sm font-medium text-blue-700">
                   {lotData.pricePerHour.toLocaleString('vi-VN')}đ/giờ
                 </span>
               </div>
               <div className="flex items-center border px-2.5 py-1 rounded-full bg-green-50 border-green-200">
-                <DollarSign className="h-3.5 w-3.5 text-green-600 mr-1" />
+                <span className="text-xl mr-1 text-green-600">₫</span>
                 <span className="text-sm font-medium text-green-700">
                   {lotData.pricePerDay.toLocaleString('vi-VN')}đ/ngày
                 </span>
               </div>
               <div className="flex items-center border px-2.5 py-1 rounded-full bg-purple-50 border-purple-200">
-                <DollarSign className="h-3.5 w-3.5 text-purple-600 mr-1" />
+                <span className="text-xl mr-1 text-purple-600">₫</span>
                 <span className="text-sm font-medium text-purple-700">
                   {lotData.pricePerMonth.toLocaleString('vi-VN')}đ/tháng
                 </span>
@@ -819,7 +802,7 @@ export default function ParkingLotDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-yellow-500 mr-2" />
+                  <span className="text-xl mr-2 text-yellow-500">₫</span>
                   <span className="text-2xl font-bold">{lotData.pricePerHour.toLocaleString('vi-VN')} đ</span>
                 </div>
               </CardContent>
@@ -921,7 +904,7 @@ export default function ParkingLotDetailPage() {
                       >
                         <h4 className="font-medium">{area.areaName}</h4>
                         <div className="flex justify-between items-center mt-1">
-                          <p className="text-sm text-gray-500">{area.totalFloor} tầng</p>
+                          <p className="text-sm text-gray-500">{area.totalFloors} tầng</p>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
                             {area.rentalType === RentalType.Walkin ? 'Vãng lai' : 'Hợp đồng'}
                           </span>
@@ -1007,7 +990,7 @@ export default function ParkingLotDetailPage() {
                           onClick={() => handleFloorChange(floor.floorId)}
                         >
                           <h4 className="font-medium">{floor.floorName}</h4>
-                          <p className="text-sm text-gray-500">{floor.totalParkingSpace} vị trí</p>
+                          <p className="text-sm text-gray-500">{floor.totalParkingSpaces} vị trí</p>
                         </div>
                       ))}
 

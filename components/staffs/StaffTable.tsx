@@ -41,14 +41,14 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const handleDelete = async (staffAccountId: number) => {
-    if (window.confirm("Are you sure? This will delete the staff member.")) {
+    if (window.confirm("Bạn có chắc chắn? Hành động này sẽ xóa nhân viên.")) {
       try {
         await deleteStaff(staffAccountId); // Use the correct ID
-        alert("Staff member deleted");
+        alert("Đã xóa nhân viên");
         refreshDataAction();
       } catch (error) {
         alert(
-          `Failed to delete: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Xóa thất bại: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
         );
       }
     }
@@ -58,7 +58,7 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
   const columns = React.useMemo<ColumnDef<Staff>[]>(
     () => [
       {
-        header: "Staff",
+        header: "Nhân viên",
         accessorKey: "firstName", // Sort by first name
         cell: ({ row }) => (
           <div className="font-medium">
@@ -72,7 +72,7 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
         ),
       },
       {
-        header: "Contact Information",
+        header: "Thông tin liên hệ",
         accessorKey: "email", // Sort by email
         cell: ({ row }) => (
           <div>
@@ -84,12 +84,12 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
       {
         // IMPORTANT: Check the exact boolean field name in your Staff type ('isActive' or 'isActived')
         accessorKey: "isActived", // Or 'isActive'
-        header: "Status",
+        header: "Trạng thái",
         cell: ({ row }) => {
           const isActive = row.getValue("isActived"); // Or 'isActive'
           return (
             <Badge variant={isActive ? "default" : "outline"}>
-              {isActive ? "Active" : "Inactive"}
+              {isActive ? "Đang hoạt động" : "Không hoạt động"}
             </Badge>
           );
         },
@@ -119,7 +119,7 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
                   <DropdownMenuItem
                     className="cursor-pointer"
                     onClick={() =>
-                      alert(`Edit action for Staff ID: ${staffId}`)
+                      alert(`Chỉnh sửa cho nhân viên ID: ${staffId}`)
                     } // Placeholder for Edit modal
                   >
                     <Edit className="mr-2 h-4 w-4" />
@@ -189,7 +189,7 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No staff members found.
+                  Không tìm thấy nhân viên nào.
                 </TableCell>
               </TableRow>
             )}
@@ -200,8 +200,7 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
       {/* Pagination Controls */}
       <div className="flex items-center justify-between space-x-2 p-4 border-t">
         <div className="text-sm text-muted-foreground">
-          Showing {table.getRowModel().rows.length} of {staff.length} staff
-          members
+          Hiển thị {table.getRowModel().rows.length} trong số {staff.length} nhân viên
           {/* Adjust if using server-side pagination */}
         </div>
         <div className="space-x-2">
@@ -211,7 +210,7 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            Previous
+            Trước
           </Button>
           <Button
             variant="outline"
@@ -219,7 +218,7 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Next
+            Tiếp
           </Button>
         </div>
       </div>

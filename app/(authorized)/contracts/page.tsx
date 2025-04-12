@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { searchContracts, addContract } from "@/lib/api/contract.api";
 import { Contract } from "@/types/contract";
 import Link from "next/link";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type FilterStatus = "all" | "active" | "expired" | "pending";
 
@@ -145,22 +146,16 @@ export default function ContractsPage() {
         }
     };
 
-    // Format currency
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND',
-            maximumFractionDigits: 0
-        }).format(amount);
-    };
-
-    // Format date
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('vi-VN');
-    };
-
     return (
         <div className="container mx-auto py-6 space-y-6">
+            {/* Breadcrumb */}
+            <Breadcrumb
+                items={[
+                    { label: "Trang chủ", href: "/dashboard" },
+                    { label: "Quản lý hợp đồng" }
+                ]}
+            />
+            
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold tracking-tight">Quản lý hợp đồng</h1>
             </div>

@@ -36,9 +36,8 @@ interface ParkingLotsTableProps {
 
 // Helper function (move to utils)
 const formatCurrency = (value: number | null | undefined) => {
-  if (value == null) return "N/A";
-  // Định dạng giá trị tiền tệ cho VND
-  return `${value.toLocaleString('vi-VN')} đ`;
+  if (!value) return "0 ₫";
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
 export function ParkingLotsTable({

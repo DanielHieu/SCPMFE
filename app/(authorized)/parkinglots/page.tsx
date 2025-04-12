@@ -23,17 +23,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import useDebounce from "@/hooks/useDebounce";
-import { PlusCircle, Search, Car, AreaChart, Building, DollarSign } from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import { PlusCircle, Search, Car, AreaChart, Building, DollarSign, Banknote, Plus } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Toaster, toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -150,31 +144,27 @@ export default function ParkingLotsPage() {
       <div className="container mx-auto py-8 space-y-6">
         {/* Header Section */}
         <div className="flex flex-col space-y-2">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/dashboard">Trang chủ</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Quản lý bãi đỗ xe</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Quản lý bãi đỗ xe</h1>
-              <p className="text-gray-500 mt-1">Quản lý danh sách và thông tin các bãi đỗ xe</p>
-            </div>
+          <Breadcrumb
+            items={[
+              { label: "Trang chủ", href: "/dashboard" },
+              { label: "Quản lý bãi đỗ xe" }
+            ]}
+          />
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight">Quản lý bãi đỗ xe</h1>
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="h-10 px-4">
-                  <PlusCircle className="w-4 h-4 mr-2" /> Thêm bãi đỗ xe mới
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Thêm bãi đỗ xe
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Thêm bãi đỗ xe mới</DialogTitle>
+                  <DialogDescription>
+                    Thêm thông tin bãi đỗ xe mới vào hệ thống
+                  </DialogDescription>
                 </DialogHeader>
                 <ParkingLotForm
                   onSubmitAction={handleAddSubmit}
@@ -205,8 +195,8 @@ export default function ParkingLotsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
-                <DollarSign className="h-5 w-5 text-green-500 mr-2" />
-                <span className="text-2xl font-bold">{averagePricePerHour.toLocaleString('vi-VN')} đ</span>
+                <Banknote className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-2xl font-bold">{averagePricePerHour.toLocaleString('vi-VN')} ₫</span>
               </div>
             </CardContent>
           </Card>
@@ -216,18 +206,19 @@ export default function ParkingLotsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
-                <DollarSign className="h-5 w-5 text-yellow-500 mr-2" />
-                <span className="text-2xl font-bold">{averagePricePerDay.toLocaleString('vi-VN')} đ</span>
+                <Banknote className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-2xl font-bold">{averagePricePerDay.toLocaleString('vi-VN')} ₫</span>
               </div>
             </CardContent>
-          </Card><Card>
+          </Card>
+          <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-500">Giá trung bình theo tháng</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
-                <DollarSign className="h-5 w-5 text-yellow-500 mr-2" />
-                <span className="text-2xl font-bold">{averagePricePerMonth.toLocaleString('vi-VN')} đ</span>
+                <Banknote className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-2xl font-bold">{averagePricePerMonth.toLocaleString('vi-VN')} ₫</span>
               </div>
             </CardContent>
           </Card>
@@ -321,6 +312,9 @@ export default function ParkingLotsPage() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Chỉnh sửa thông tin bãi đỗ xe</DialogTitle>
+              <DialogDescription>
+                Cập nhật thông tin chi tiết của bãi đỗ xe
+              </DialogDescription>
             </DialogHeader>
             {editingLot && (
               <ParkingLotForm

@@ -1,19 +1,19 @@
 // components/features/parking-lots/[lotId]/PriceInfoCard.tsx
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Clock, CalendarDays, Calendar } from "lucide-react"; // Example icons
+import { Clock, CalendarDays, Calendar } from "lucide-react"; // Example icons
 
 interface PriceInfoCardProps {
-  pricePerHour?: number | null;
-  pricePerDay?: number | null;
-  pricePerMonth?: number | null;
+  pricePerHour: number | null;
+  pricePerDay: number | null;
+  pricePerMonth: number | null;
 }
 
 // Helper function (move to utils)
 const formatCurrency = (value: number | null | undefined) => {
-  if (value == null) return "N/A";
-  // Adjust currency formatting as needed (e.g., VND)
-  return value.toLocaleString("en-US", { style: "currency", currency: "USD" }); // Example USD
+  if (!value) return "0 ₫";
+  // Format as VND with symbol after the amount
+  return `${value.toLocaleString('vi-VN')} ₫`;
 };
 
 export function PriceInfoCard({
@@ -22,33 +22,34 @@ export function PriceInfoCard({
   pricePerMonth,
 }: PriceInfoCardProps) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium flex items-center">
-          <DollarSign className="w-5 h-5 mr-2 text-muted-foreground" /> Parking
-          Price
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center">
+          <span className="text-xl mr-2 text-muted-foreground">₫</span> Giá gửi xe
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 pt-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center text-muted-foreground">
-            <Clock size={16} className="mr-2" />
-            Hourly
-          </span>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Giá theo giờ</span>
+          </div>
           <span className="font-medium">{formatCurrency(pricePerHour)}</span>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center text-muted-foreground">
-            <CalendarDays size={16} className="mr-2" />
-            Daily Max
-          </span>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <CalendarDays className="w-4 h-4 mr-2 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Giá theo ngày</span>
+          </div>
           <span className="font-medium">{formatCurrency(pricePerDay)}</span>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center text-muted-foreground">
-            <Calendar size={16} className="mr-2" />
-            Monthly
-          </span>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Giá theo tháng</span>
+          </div>
           <span className="font-medium">{formatCurrency(pricePerMonth)}</span>
         </div>
         {/* Yearly price ignored as per API data */}
