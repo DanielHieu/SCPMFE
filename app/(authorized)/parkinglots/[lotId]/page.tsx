@@ -22,8 +22,9 @@ import {
   Edit,
   Save,
   AreaChart,
-  X,
-  AlertTriangle
+  AlertTriangle,
+  CircleSlash,
+  Banknote
 } from "lucide-react";
 import {
   Dialog,
@@ -41,15 +42,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapDisplay } from "@/components/parkinglots/MapDisplay";
 
 // Import API functions
-import { getParkingLotById, getAreasByLot, getFloorsByArea, getParkingSpacesByFloor, addArea, addFloor, addSpace, updateParkingLot } from "@/lib/api";
-import { Area, Floor, ParkingSpace, RentalType, ParkingSpaceStatus } from "@/types";
+import { getParkingLotById, getAreasByLot, getFloorsByArea, getParkingSpacesByFloor, addArea, addFloor, addSpace, updateParkingLot, getParkingLotSummaries } from "@/lib/api";
+import { Area, Floor, ParkingSpace, RentalType, ParkingSpaceStatus, ParkingLotSummaries } from "@/types";
 
 export default function ParkingLotDetailPage() {
   const params = useParams();
   const lotId = parseInt(params?.lotId as string, 10);
 
   const [lotData, setLotData] = useState<any>(null);
-  const [areas, setAreas] = useState<Area[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -82,11 +82,11 @@ export default function ParkingLotDetailPage() {
   const [newSpaceName, setNewSpaceName] = useState("");
 
   // Stats for the overview panel
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<ParkingLotSummaries>({
     totalAreas: 0,
-    totalFloors: 0,
-    totalSpaces: 0,
-    occupiedSpaces: 0
+    totalParkingSpaces: 0,
+    totalAvailableParkingSpaces: 0,
+    totalRevenue: 0
   });
 
   // Helper function to get styles for parking spaces based on status
@@ -303,24 +303,20 @@ export default function ParkingLotDetailPage() {
 
         // Get areas for this parking lot
         console.log(`[ParkingLotDetail] Fetching areas for lot ID: ${lotId}`);
-        const areasData = await getAreasByLot(lotId);
-        console.log(`[ParkingLotDetail] Areas received:`, areasData?.length || 0);
-        setAreas(Array.isArray(areasData) ? areasData : []);
 
-        // Calculate statistics
-        let floors = 0;
-        let spaces = 0;
-        let occupied = 0;
+        // Get parking lot statistics
+        console.log(`[ParkingLotDetail] Fetching parking lot summaries for lot ID: ${lotId}`);
+        const summaries = await getParkingLotSummaries(lotId);
+        console.log(`[ParkingLotDetail] Parking lot summaries received:`, summaries);
 
-        if (Array.isArray(areasData)) {
-          // Calculate stats based on available data
-          setStats({
-            totalAreas: areasData.length,
-            totalFloors: floors,
-            totalSpaces: spaces,
-            occupiedSpaces: occupied
-          });
-        }
+        // Update stats with the received data
+        setStats({
+          totalAreas: summaries?.totalAreas || 0,
+          totalParkingSpaces: summaries?.totalParkingSpaces || 0,
+          totalAvailableParkingSpaces: summaries?.totalAvailableParkingSpaces || 0,
+          totalRevenue: summaries?.totalRevenue || 0
+        });
+
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
         console.error(`[ParkingLotDetail] Error fetching data:`, errorMessage);
@@ -372,24 +368,11 @@ export default function ParkingLotDetailPage() {
       const areasData = await getAreasByLot(lotId);
       console.log(`[ParkingLotDetail] Areas loaded:`, areasData?.length || 0);
       setAreasList(Array.isArray(areasData) ? areasData : []);
-      // Calculate statistics
-      let totalFloors = 0;
-      let totalSpaces = 0;
-
-      if (Array.isArray(areasData) && areasData.length > 0) {
-        // For statistics, we could load all floors and spaces
-        // But for performance, we'll only update the counts when specific areas/floors are loaded
-        setStats({
-          totalAreas: areasData.length,
-          totalFloors,
-          totalSpaces,
-          occupiedSpaces: 0
-        });
-      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       console.error(`[ParkingLotDetail] Error loading areas:`, errorMessage);
       toast.error("Không thể tải dữ liệu khu vực");
+      setAreasList([]);
     }
   };
 
@@ -765,6 +748,17 @@ export default function ParkingLotDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Tổng doanh thu trong ngày</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center">
+                  <Banknote className="h-5 w-5 text-yellow-500 mr-2" />
+                  <span className="text-2xl font-bold">{stats.totalRevenue} Đ</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500">Tổng số khu vực</CardTitle>
               </CardHeader>
               <CardContent>
@@ -776,39 +770,27 @@ export default function ParkingLotDetailPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Tổng số tầng</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <Building className="h-5 w-5 text-indigo-500 mr-2" />
-                  <span className="text-2xl font-bold">{stats.totalFloors}</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500">Vị trí đỗ xe</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
                   <Car className="h-5 w-5 text-green-500 mr-2" />
-                  <span className="text-2xl font-bold">{stats.totalSpaces}</span>
+                  <span className="text-2xl font-bold">{stats.totalParkingSpaces}</span>
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Giá theo giờ</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-500">Tổng số vị trí trống</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <span className="text-xl mr-2 text-yellow-500">₫</span>
-                  <span className="text-2xl font-bold">{lotData.pricePerHour.toLocaleString('vi-VN')} đ</span>
+                  <CircleSlash className="h-5 w-5 text-orange-500 mr-2" />
+                  <span className="text-2xl font-bold">{stats.totalAvailableParkingSpaces}</span>
                 </div>
               </CardContent>
             </Card>
           </div>
-
           {/* Map */}
           <div className="grid grid-cols-1 gap-6">
             <Card>

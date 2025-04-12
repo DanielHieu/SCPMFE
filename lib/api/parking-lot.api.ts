@@ -3,6 +3,7 @@
 import {
   AddParkingLotPayload,
   ParkingLot,
+  ParkingLotSummaries,
   SearchParkingLotPayload,
   UpdateParkingLotPayload,
 } from "@/types/parking-lot";
@@ -61,4 +62,9 @@ export async function getParkingLotById(
   id: number,
 ): Promise<ParkingLot | null> {
   return await fetchApi(`/ParkingLot/GetById?id=${id}`, { cache: "no-store" });
+}
+
+// GET /api/proxy/ParkingLot/{id}/Summaries
+export async function getParkingLotSummaries(id: number): Promise<ParkingLotSummaries | null> {
+  return await fetchApi(`/ParkingLot/${id}/Summaries`, { cache: "no-store" });
 }

@@ -347,4 +347,3 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
 };
 
 export default ContractDetailComponent;
-

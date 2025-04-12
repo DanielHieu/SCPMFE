@@ -14,6 +14,13 @@ export interface ParkingLot {
   parkingLotPriceHistories: [];
 }
 
+export interface ParkingLotSummaries {
+  totalAreas: number;
+  totalParkingSpaces: number;
+  totalAvailableParkingSpaces: number;
+  totalRevenue: number;
+}
+
 export interface UpdateParkingLotPayload {
   parkingLotId: number;
   pricePerHour: number;
