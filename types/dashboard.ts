@@ -9,8 +9,37 @@ export interface DashboardStats {
   averageOccupancy: number;
 }
 
-export interface DashboardData {
-  stats: DashboardStats;
-  recentActivities?: any[]; // TODO: Define activity type
-  upcomingEvents?: any[]; // TODO: Define event type
-} 
+export interface ParkingLotRevenue{
+  parkingLotName: string;
+  totalRevenue: number;
+}
+
+export interface WailkinDateRevenue{
+  revenueDate: string;
+  totalRevenue: number;
+  walkinDailyRevenueDetails: Array<ParkingLotRevenue>
+}
+
+export interface MonthlyRevenues{
+  month: number;
+  parkingLotRevenues: Array<ParkingLotRevenue>;
+}
+
+export interface QuarterlyRevenues{
+  quarter: number;
+  parkingLotRevenues: Array<ParkingLotRevenue>;
+}
+
+export interface YearlyRevenues{
+  year: number;
+  parkingLotRevenues: Array<ParkingLotRevenue>;
+}
+
+export interface ParkingLotMonthlyRevenue{
+  month: number;
+  revenue: number;
+  parkingLotName: string;
+}
+
+
+

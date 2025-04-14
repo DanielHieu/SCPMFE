@@ -24,7 +24,12 @@ interface NavItem {
 }
 
 const sidebarItems: NavItem[] = [
-  { label: "Bảng điều khiển", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Bảng điều khiển", href: "/dashboard", icon: LayoutDashboard,
+    subItems: [
+      { label: "Doanh thu hợp đồng", href: "/dashboard/contract" },
+      { label: "Doanh thu vãng lai", href: "/dashboard/walkin" },
+    ]
+  },
   {
     label: "Người dùng",
     href: "/users",
