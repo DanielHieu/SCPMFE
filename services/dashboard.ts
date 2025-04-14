@@ -1,10 +1,9 @@
-import { DashboardData } from "@/types/dashboard";
+import { DashboardStats } from "@/types/dashboard";
 
 // TODO: Replace with actual API call
-export async function fetchDashboardData(): Promise<DashboardData> {
+export async function fetchDashboardData(): Promise<DashboardStats> {
   // Mock data - replace with actual API call
-  return {
-    stats: {
+  return { 
       totalEmployees: 12,
       totalCustomers: 150,
       totalContracts: 45,
@@ -13,6 +12,5 @@ export async function fetchDashboardData(): Promise<DashboardData> {
       activeContracts: 35,
       availableSpots: 120,
       averageOccupancy: 75
-    }
   };
 } 
