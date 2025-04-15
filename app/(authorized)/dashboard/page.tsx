@@ -6,6 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Banknote } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { fetchWalkinTodayRevenue } from "@/lib/api/dashboard.api";
+import ParkingLotWalkinRevenueInYear from "@/components/dashboard/ParkingLotWalkinRevenueInYear";
+import ParkingLotContractRevenueInYear from "@/components/dashboard/ParkingLotContractRevenueInYear";
 
 export default function DashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
@@ -15,6 +17,7 @@ export default function DashboardPage() {
         async function loadDashboardData() {
             try {
                 const todayRevenue = await fetchWalkinTodayRevenue();
+                console.log("Today Revenue", todayRevenue);
                 setWalkinTodayRevenue(todayRevenue);
             } catch (error) {
                 console.error("Failed to load dashboard data:", error);
@@ -115,6 +118,12 @@ export default function DashboardPage() {
                         )}
                     </CardContent>
                 </Card>
+            </div>
+            <div className="grid grid-cols-1 gap-6">
+                <ParkingLotWalkinRevenueInYear year={new Date().getFullYear()} />
+            </div>
+            <div className="grid grid-cols-1 gap-6">
+                <ParkingLotContractRevenueInYear year={new Date().getFullYear()} />
             </div>
         </div>
     );
