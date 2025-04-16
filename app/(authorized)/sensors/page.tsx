@@ -18,8 +18,7 @@ import {
     Dialog,
     DialogContent,
     DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+    DialogTitle
 } from "@/components/ui/dialog";
 import {
     DropdownMenu,
@@ -58,7 +57,7 @@ import { ParkingStatusSensor } from "@/types/parkingStatusSensor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
-// Extended type for our UI needs
+// Mở rộng kiểu dữ liệu cho nhu cầu giao diện
 type SensorWithUI = ParkingStatusSensor & {
     showApiKey?: boolean;
     lastMaintenance?: string;
@@ -85,7 +84,18 @@ export default function SensorsPage() {
         inactive: 0,
         maintenance: 0,
     });
-    const [parkingSpaceOptions, setParkingSpaceOptions] = useState<Array<{id: number, name: string}>>([]);
+    const [parkingSpaceOptions, setParkingSpaceOptions] = useState<Array<{ id: number, name: string }>>([]);
+
+    // Trạng thái cho lựa chọn phân cấp
+    const [parkingLots, setParkingLots] = useState<Array<{ id: number, name: string }>>([]);
+    const [areas, setAreas] = useState<Array<{ id: number, name: string, lotId: number }>>([]);
+    const [floors, setFloors] = useState<Array<{ id: number, name: string, areaId: number }>>([]);
+    const [parkingSpaces, setParkingSpaces] = useState<Array<{ id: number, name: string, floorId: number }>>([]);
+
+    // Giá trị đã chọn cho lựa chọn phân cấp
+    const [selectedLot, setSelectedLot] = useState<number | null>(null);
+    const [selectedArea, setSelectedArea] = useState<number | null>(null);
+    const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
 
     const filterDisplayMap: Record<FilterStatus, string> = {
         all: "Tất cả cảm biến",
@@ -94,7 +104,7 @@ export default function SensorsPage() {
         maintenance: "Đang bảo trì",
     };
 
-    // Generate a random API key
+    // Tạo API key ngẫu nhiên
     const generateApiKey = () => {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         const length = 32;
@@ -106,7 +116,7 @@ export default function SensorsPage() {
         return result;
     };
 
-    // Copy API key to clipboard
+    // Sao chép API key vào clipboard
     const copyToClipboard = async (text: string) => {
         try {
             await navigator.clipboard.writeText(text);
@@ -116,7 +126,7 @@ export default function SensorsPage() {
         }
     };
 
-    // Toggle showing/hiding API key
+    // Bật/tắt hiển thị API key
     const toggleShowApiKey = (sensorId: number) => {
         setShowApiKey(prev => ({
             ...prev,
@@ -124,26 +134,26 @@ export default function SensorsPage() {
         }));
     };
 
-    // Fetch sensors data from API
+    // Lấy dữ liệu cảm biến từ API
     const fetchSensors = async () => {
         setIsLoading(true);
         setError(null);
         try {
             const data = await getParkingStatusSensors();
 
-            // Map API data to UI data
+            // Ánh xạ dữ liệu API sang dữ liệu giao diện
             const mappedSensors = data.map(sensor => ({
                 ...sensor,
-                // Add UI-specific properties with default values
+                // Thêm thuộc tính dành riêng cho giao diện với giá trị mặc định
                 showApiKey: false,
-                lastMaintenance: new Date().toISOString().split('T')[0], // Default to today
-                batteryLevel: Math.floor(Math.random() * 100), // Mock battery level
-                location: `Bãi đỗ xe - Vị trí ${sensor.parkingSpaceName}` // Generate a location
+                lastMaintenance: new Date().toISOString().split('T')[0], // Mặc định là hôm nay
+                batteryLevel: Math.floor(Math.random() * 100), // Mức pin giả lập
+                location: `Bãi đỗ xe - Vị trí ${sensor.parkingSpaceName}` // Tạo vị trí
             }));
 
             setSensors(mappedSensors);
 
-            // Update counts
+            // Cập nhật số lượng
             const allCount = mappedSensors.length;
             const activeCount = mappedSensors.filter(s => s.status.toLowerCase() === "active").length;
             const inactiveCount = mappedSensors.filter(s => s.status.toLowerCase() === "inactive").length;
@@ -157,7 +167,7 @@ export default function SensorsPage() {
             });
 
         } catch (err) {
-            setError(err instanceof Error ? err.message : "An unknown error occurred");
+            setError(err instanceof Error ? err.message : "Đã xảy ra lỗi không xác định");
             toast.error("Không thể tải dữ liệu cảm biến");
         } finally {
             setIsLoading(false);
@@ -168,7 +178,7 @@ export default function SensorsPage() {
         fetchSensors();
     }, []);
 
-    // Map status from API to UI filter status
+    // Ánh xạ trạng thái từ API sang bộ lọc giao diện
     const mapStatusToFilter = (status: string): FilterStatus => {
         const lowerStatus = status.toLowerCase();
         if (lowerStatus === "active") return "active";
@@ -177,7 +187,7 @@ export default function SensorsPage() {
         return "all";
     };
 
-    // Filter sensors based on search term and status
+    // Lọc cảm biến dựa trên từ khóa tìm kiếm và trạng thái
     const filteredSensors = sensors.filter((sensor) => {
         const matchesSearch =
             sensor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -190,41 +200,45 @@ export default function SensorsPage() {
         return matchesSearch && matchesStatus;
     });
 
-    // Handle adding a new sensor
+    // Xử lý thêm cảm biến mới
     const handleAddSensor = async (sensorData: Partial<SensorWithUI>) => {
         try {
-            // In a real implementation, you would call an API endpoint to create a sensor
-            toast.success("Functionality not implemented in this demo");
+            // Trong triển khai thực tế, bạn sẽ gọi API để tạo cảm biến
+            toast.success("Chức năng chưa được triển khai trong bản demo này");
             setIsAddModalOpen(false);
-            setNewSensor({}); // Reset form
+            setNewSensor({}); // Đặt lại biểu mẫu
+            // Đặt lại lựa chọn phân cấp
+            setSelectedLot(null);
+            setSelectedArea(null);
+            setSelectedFloor(null);
         } catch (err) {
-            toast.error("Lỗi: " + (err instanceof Error ? err.message : "Unknown error"));
+            toast.error("Lỗi: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
         }
     };
 
-    // Handle updating a sensor
+    // Xử lý cập nhật cảm biến
     const handleUpdateSensor = async (sensorData: SensorWithUI) => {
         try {
-            // In a real implementation, you would call an API endpoint to update a sensor
-            toast.success("Functionality not implemented in this demo");
+            // Trong triển khai thực tế, bạn sẽ gọi API để cập nhật cảm biến
+            toast.success("Chức năng chưa được triển khai trong bản demo này");
             setIsEditModalOpen(false);
             setEditingSensor(null);
         } catch (err) {
-            toast.error("Lỗi: " + (err instanceof Error ? err.message : "Unknown error"));
+            toast.error("Lỗi: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
         }
     };
 
-    // Handle deleting a sensor
+    // Xử lý xóa cảm biến
     const handleDeleteSensor = async (sensorId: number) => {
         try {
-            // In a real implementation, you would call an API endpoint to delete a sensor
-            toast.success("Functionality not implemented in this demo");
+            // Trong triển khai thực tế, bạn sẽ gọi API để xóa cảm biến
+            toast.success("Chức năng chưa được triển khai trong bản demo này");
         } catch (err) {
-            toast.error("Lỗi: " + (err instanceof Error ? err.message : "Unknown error"));
+            toast.error("Lỗi: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
         }
     };
 
-    // Get status display info
+    // Lấy thông tin hiển thị trạng thái
     const getStatusDisplay = (status: string) => {
         const statusLower = status.toLowerCase();
 
@@ -259,28 +273,136 @@ export default function SensorsPage() {
         };
     };
 
-    // Add a function to fetch parking spaces
-    const fetchParkingSpaces = async () => {
+    // Lấy danh sách bãi đỗ xe
+    const fetchParkingLots = async () => {
         try {
-            // For now we'll use mock data, but in a real app, you'd fetch from an API
-            const mockParkingSpaces = [
-                { id: 1, name: "A1 - Floor 1 - Block A" },
-                { id: 2, name: "A2 - Floor 1 - Block A" },
-                { id: 3, name: "B1 - Floor 2 - Block B" },
-                { id: 4, name: "B2 - Floor 2 - Block B" },
-                { id: 5, name: "C1 - Floor 1 - Block C" },
+            // Hiện tại chúng ta sử dụng dữ liệu giả, nhưng trong ứng dụng thực tế, bạn sẽ lấy từ API
+            const mockParkingLots = [
+                { id: 1, name: "Bãi đỗ xe A - Quận 1" },
+                { id: 2, name: "Bãi đỗ xe B - Quận 2" },
+                { id: 3, name: "Bãi đỗ xe C - Quận 3" },
             ];
-            setParkingSpaceOptions(mockParkingSpaces);
+            setParkingLots(mockParkingLots);
         } catch (err) {
-            console.error("Failed to fetch parking spaces:", err);
+            console.error("Không thể tải dữ liệu bãi đỗ xe:", err);
+            toast.error("Không thể tải dữ liệu bãi đỗ xe");
+        }
+    };
+
+    // Lấy danh sách khu vực dựa trên bãi đỗ xe đã chọn
+    const fetchAreas = async (lotId: number) => {
+        try {
+            // Dữ liệu giả cho khu vực
+            const mockAreas = [
+                { id: 1, name: "Khu vực A", lotId: 1 },
+                { id: 2, name: "Khu vực B", lotId: 1 },
+                { id: 3, name: "Khu vực C", lotId: 2 },
+                { id: 4, name: "Khu vực D", lotId: 2 },
+                { id: 5, name: "Khu vực E", lotId: 3 },
+            ];
+            const filteredAreas = mockAreas.filter(area => area.lotId === lotId);
+            setAreas(filteredAreas);
+            setSelectedArea(null); // Đặt lại khu vực đã chọn khi bãi đỗ xe thay đổi
+            setSelectedFloor(null); // Đặt lại tầng đã chọn
+        } catch (err) {
+            console.error("Không thể tải dữ liệu khu vực:", err);
+            toast.error("Không thể tải dữ liệu khu vực");
+        }
+    };
+
+    // Lấy danh sách tầng dựa trên khu vực đã chọn
+    const fetchFloors = async (areaId: number) => {
+        try {
+            // Dữ liệu giả cho tầng
+            const mockFloors = [
+                { id: 1, name: "Tầng 1", areaId: 1 },
+                { id: 2, name: "Tầng 2", areaId: 1 },
+                { id: 3, name: "Tầng 1", areaId: 2 },
+                { id: 4, name: "Tầng 1", areaId: 3 },
+                { id: 5, name: "Tầng 2", areaId: 3 },
+                { id: 6, name: "Tầng 1", areaId: 4 },
+                { id: 7, name: "Tầng 1", areaId: 5 },
+            ];
+            const filteredFloors = mockFloors.filter(floor => floor.areaId === areaId);
+            setFloors(filteredFloors);
+            setSelectedFloor(null); // Đặt lại tầng đã chọn khi khu vực thay đổi
+        } catch (err) {
+            console.error("Không thể tải dữ liệu tầng:", err);
+            toast.error("Không thể tải dữ liệu tầng");
+        }
+    };
+
+    // Lấy danh sách vị trí đỗ xe dựa trên tầng đã chọn
+    const fetchParkingSpaces = async (floorId: number) => {
+        try {
+            // Dữ liệu giả cho vị trí đỗ xe
+            const mockParkingSpaces = [
+                { id: 1, name: "A1", floorId: 1 },
+                { id: 2, name: "A2", floorId: 1 },
+                { id: 3, name: "A3", floorId: 1 },
+                { id: 4, name: "B1", floorId: 2 },
+                { id: 5, name: "B2", floorId: 2 },
+                { id: 6, name: "C1", floorId: 3 },
+                { id: 7, name: "D1", floorId: 4 },
+                { id: 8, name: "D2", floorId: 4 },
+                { id: 9, name: "E1", floorId: 5 },
+                { id: 10, name: "F1", floorId: 6 },
+                { id: 11, name: "G1", floorId: 7 },
+            ];
+            const filteredSpaces = mockParkingSpaces.filter(space => space.floorId === floorId);
+            setParkingSpaces(filteredSpaces);
+        } catch (err) {
+            console.error("Không thể tải dữ liệu vị trí đỗ xe:", err);
             toast.error("Không thể tải dữ liệu vị trí đỗ xe");
         }
     };
-    
-    // Fetch parking spaces when the add sensor or edit sensor modal opens
+
+    // Thêm hàm để lấy danh sách vị trí đỗ xe (phương thức cũ)
+    const fetchParkingSpaceOptions = async () => {
+        try {
+            // Hiện tại chúng ta sử dụng dữ liệu giả, nhưng trong ứng dụng thực tế, bạn sẽ lấy từ API
+            const mockParkingSpaces = [
+                { id: 1, name: "A1 - Tầng 1 - Khu A" },
+                { id: 2, name: "A2 - Tầng 1 - Khu A" },
+                { id: 3, name: "B1 - Tầng 2 - Khu B" },
+                { id: 4, name: "B2 - Tầng 2 - Khu B" },
+                { id: 5, name: "C1 - Tầng 1 - Khu C" },
+            ];
+            setParkingSpaceOptions(mockParkingSpaces);
+        } catch (err) {
+            console.error("Không thể tải dữ liệu vị trí đỗ xe:", err);
+            toast.error("Không thể tải dữ liệu vị trí đỗ xe");
+        }
+    };
+
+    // Effect xử lý khi chọn bãi đỗ xe
     useEffect(() => {
-        if (isAddModalOpen || isEditModalOpen) {
-            fetchParkingSpaces();
+        if (selectedLot) {
+            fetchAreas(selectedLot);
+        }
+    }, [selectedLot]);
+
+    // Effect xử lý khi chọn khu vực
+    useEffect(() => {
+        if (selectedArea) {
+            fetchFloors(selectedArea);
+        }
+    }, [selectedArea]);
+
+    // Effect xử lý khi chọn tầng
+    useEffect(() => {
+        if (selectedFloor) {
+            fetchParkingSpaces(selectedFloor);
+        }
+    }, [selectedFloor]);
+
+    // Lấy danh sách vị trí đỗ xe khi mở modal thêm hoặc sửa cảm biến
+    useEffect(() => {
+        if (isAddModalOpen) {
+            fetchParkingLots();
+            fetchParkingSpaceOptions(); // Phương thức cũ
+        } else if (isEditModalOpen) {
+            fetchParkingSpaceOptions(); // Phương thức cũ cho modal sửa
         }
     }, [isAddModalOpen, isEditModalOpen]);
 
@@ -303,7 +425,7 @@ export default function SensorsPage() {
                 </div>
             </div>
 
-            {/* Filters and Search */}
+            {/* Bộ lọc và Tìm kiếm */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="md:col-span-3">
                     <CardContent className="pt-6">
@@ -369,7 +491,7 @@ export default function SensorsPage() {
                 </Card>
             </div>
 
-            {/* Sensors List */}
+            {/* Danh sách cảm biến */}
             <div className="bg-white rounded-lg border shadow-sm">
                 {isLoading ? (
                     <div className="p-8">
@@ -385,17 +507,17 @@ export default function SensorsPage() {
                 ) : error ? (
                     <div className="p-8 text-center">
                         <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium">Error loading sensors</h3>
+                        <h3 className="text-lg font-medium">Lỗi khi tải dữ liệu cảm biến</h3>
                         <p className="text-muted-foreground mb-4">{error}</p>
-                        <Button onClick={fetchSensors}>Try Again</Button>
+                        <Button onClick={fetchSensors}>Thử lại</Button>
                     </div>
                 ) : filteredSensors.length === 0 ? (
                     <div className="p-8 text-center">
-                        <h3 className="text-lg font-medium">No sensors found</h3>
+                        <h3 className="text-lg font-medium">Không tìm thấy cảm biến</h3>
                         <p className="text-muted-foreground">
                             {searchTerm
-                                ? "Try adjusting your search or filter criteria"
-                                : "Add a new sensor to get started"}
+                                ? "Hãy điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc"
+                                : "Thêm cảm biến mới để bắt đầu"}
                         </p>
                     </div>
                 ) : (
@@ -558,8 +680,8 @@ export default function SensorsPage() {
                                         space => space.id === parseInt(value)
                                     );
                                     const spaceName = selectedSpace?.name || "";
-                                    setNewSensor({ 
-                                        ...newSensor, 
+                                    setNewSensor({
+                                        ...newSensor,
                                         parkingSpaceId: parseInt(value),
                                         parkingSpaceName: spaceName,
                                         // Set a default name based on the parking space if not set already
@@ -576,8 +698,8 @@ export default function SensorsPage() {
                                     <SelectGroup>
                                         <SelectLabel>Vị trí đỗ xe</SelectLabel>
                                         {parkingSpaceOptions.map(space => (
-                                            <SelectItem 
-                                                key={space.id} 
+                                            <SelectItem
+                                                key={space.id}
                                                 value={space.id.toString()}
                                             >
                                                 {space.name}
@@ -673,8 +795,8 @@ export default function SensorsPage() {
                                         const selectedSpace = parkingSpaceOptions.find(
                                             space => space.id === parseInt(value)
                                         );
-                                        setEditingSensor({ 
-                                            ...editingSensor, 
+                                        setEditingSensor({
+                                            ...editingSensor,
                                             parkingSpaceId: parseInt(value),
                                             parkingSpaceName: selectedSpace?.name || ""
                                         });
@@ -687,8 +809,8 @@ export default function SensorsPage() {
                                         <SelectGroup>
                                             <SelectLabel>Vị trí đỗ xe</SelectLabel>
                                             {parkingSpaceOptions.map(space => (
-                                                <SelectItem 
-                                                    key={space.id} 
+                                                <SelectItem
+                                                    key={space.id}
                                                     value={space.id.toString()}
                                                 >
                                                     {space.name}
@@ -748,7 +870,7 @@ export default function SensorsPage() {
                                 }}>
                                     Hủy
                                 </Button>
-                                <Button 
+                                <Button
                                     onClick={() => handleUpdateSensor(editingSensor)}
                                     disabled={!editingSensor.parkingSpaceId || !editingSensor.status}
                                 >

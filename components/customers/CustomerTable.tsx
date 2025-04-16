@@ -1,12 +1,7 @@
 "use client";
 
 import { Customer } from "@/types";
-import {
-  deleteCustomer,
-  getCustomerContractCount,
-  getCustomerPendingRequestCount,
-} from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -25,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { Edit, Eye, MoreHorizontal, Trash2 } from "lucide-react";
+import { Eye, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import {
   Table,
@@ -52,20 +47,6 @@ export function CustomerTable({
   onRefresh,
 }: CustomerTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn không?")) {
-      try {
-        await deleteCustomer(id);
-        alert("Đã xóa khách hàng");
-        onRefresh();
-      } catch (error) {
-        alert(
-          `Lỗi khi xóa: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
-        );
-      }
-    }
-  };
 
   const columns: ColumnDef<Customer>[] = React.useMemo(
     () => [
@@ -100,7 +81,7 @@ export function CustomerTable({
         cell: ({ row }) => {
           const isActive = row.getValue("isActive");
           return (
-            <Badge variant={isActive ? "default" : "outline"}>
+            <Badge variant="secondary" className={isActive ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}>
               {isActive ? "Đang hoạt động" : "Không hoạt động"}
             </Badge>
           );
@@ -112,40 +93,16 @@ export function CustomerTable({
           const customer = row.original;
           return (
             <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href={`/customers/${customer.customerId}`}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Xem chi tiết
-                    </Link>
-                  </DropdownMenuItem>
-                  {/* Ensure onClick calls the prop */}
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => onEditClick(customer)}
-                  >
-                    <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="cursor-pointer text-red-600"
-                    onClick={() => handleDelete(customer.customerId)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" /> Xóa
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Link href={`/customers/${customer.customerId}`} className="flex items-center">
+                <Eye className="mr-2 h-4 w-4 text-slate-500" />
+                Xem chi tiết
+              </Link>
             </div>
           );
         },
       },
     ],
-    [onEditClick],
+    [],
   );
 
   const table = useReactTable({
@@ -181,22 +138,22 @@ export function CustomerTable({
       </div>
     );
   }
-  
+
   return (
     <>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-md border border-slate-200">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-slate-50">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="border-b border-slate-200 hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="whitespace-nowrap">
+                  <TableHead key={header.id} className="whitespace-nowrap text-slate-700 font-medium py-3">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -208,9 +165,10 @@ export function CustomerTable({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="py-3">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -223,7 +181,7 @@ export function CustomerTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-24 text-center text-slate-500"
                 >
                   Không có dữ liệu
                 </TableCell>
@@ -239,6 +197,7 @@ export function CustomerTable({
           size="sm"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
+          className="border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
         >
           Trước
         </Button>
@@ -247,6 +206,7 @@ export function CustomerTable({
           size="sm"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
+          className="border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
         >
           Tiếp
         </Button>

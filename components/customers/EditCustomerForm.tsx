@@ -12,14 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
 
 // Schema based ONLY on UpdateCustomerRequest (no username/password)
 const editCustomerSchema = z.object({
-  firstName: z.string().min(1, "Required").nullable(),
-  lastName: z.string().min(1, "Required").nullable(),
-  phone: z.string().min(10, "Min 10 digits").nullable(),
-  email: z.string().email("Invalid email").nullable(),
+  firstName: z.string().min(1, "Bắt buộc").nullable(),
+  lastName: z.string().min(1, "Bắt buộc").nullable(),
+  phone: z.string().min(10, "Tối thiểu 10 số").nullable(),
+  email: z.string().email("Email không hợp lệ").nullable(),
   isActive: z.boolean(),
 });
 
@@ -65,7 +64,7 @@ export function EditCustomerForm({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
         {/* First Name */}
         <div className="space-y-2">
-          <Label htmlFor="edit-firstName">First Name</Label>
+          <Label htmlFor="edit-firstName">Tên</Label>
           <Input id="edit-firstName" {...register("firstName")} />
           {errors.firstName && (
             <p className="text-sm text-red-500">{errors.firstName.message}</p>
@@ -73,7 +72,7 @@ export function EditCustomerForm({
         </div>
         {/* Last Name */}
         <div className="space-y-2">
-          <Label htmlFor="edit-lastName">Last Name</Label>
+          <Label htmlFor="edit-lastName">Họ</Label>
           <Input id="edit-lastName" {...register("lastName")} />
           {errors.lastName && (
             <p className="text-sm text-red-500">{errors.lastName.message}</p>
@@ -89,7 +88,7 @@ export function EditCustomerForm({
         </div>
         {/* Phone */}
         <div className="space-y-2">
-          <Label htmlFor="edit-phone">Phone</Label>
+          <Label htmlFor="edit-phone">Số điện thoại</Label>
           <Input id="edit-phone" type="tel" {...register("phone")} />
           {errors.phone && (
             <p className="text-sm text-red-500">{errors.phone.message}</p>
@@ -97,7 +96,7 @@ export function EditCustomerForm({
         </div>
         {/* Username (Display Readonly - not editable via Update API) */}
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="edit-username_display">Username</Label>
+          <Label htmlFor="edit-username_display">Tên đăng nhập</Label>
           <Input
             id="edit-username_display"
             defaultValue={initialData.username || "N/A"}
@@ -109,7 +108,7 @@ export function EditCustomerForm({
         {/* Is Active Status */}
         <div className="space-y-2 flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
           <Label htmlFor="edit-isActive" className="text-base">
-            Is Active
+            Đang hoạt động
           </Label>
           <Controller
             name="isActive"
@@ -135,10 +134,10 @@ export function EditCustomerForm({
           onClick={onCancelAction}
           disabled={isSubmitting}
         >
-          Cancel
+          Hủy
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Update Customer"}
+          {isSubmitting ? "Đang lưu..." : "Cập nhật khách hàng"}
         </Button>
       </div>
     </form>

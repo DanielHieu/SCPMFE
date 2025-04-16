@@ -41,3 +41,9 @@ export const getPaymentContracts = async (contractId: number): Promise<PaymentCo
     method: "GET",
   });
 };
+
+export const getContractsOfCustomer = async (customerId: number): Promise<Contract[]> => {
+  return await fetchApi(`/Contract/GetActivatedContracts?customerId=${customerId}`, {
+    method: "GET",
+  });
+};

@@ -16,7 +16,6 @@ import {
   PlusCircle,
   MapPin,
   Calendar,
-  Building,
   Info,
   Car,
   Edit,
@@ -53,7 +52,6 @@ export default function ParkingLotDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-  const [isEditingHeader, setIsEditingHeader] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Trạng thái cho chỉnh sửa bãi đỗ xe
@@ -587,7 +585,7 @@ export default function ParkingLotDetailPage() {
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
-              {lotData.address || `Bãi đỗ xe ${lotId}`}
+              {`Bãi đỗ xe PL${lotId.toString().padStart(2, '0')}`}
             </h1>
             <div className="flex items-center text-gray-500 mt-2">
               <MapPin className="h-4 w-4 mr-1" />
@@ -598,25 +596,22 @@ export default function ParkingLotDetailPage() {
             </div>
             <div className="flex items-center text-gray-500 mt-1">
               <Calendar className="h-4 w-4 mr-1" />
-              <span>Ngày tạo: {new Date(lotData.createdDate).toLocaleDateString('vi-VN')}</span>
+              <span>Ngày tạo: {lotData.createdDate}</span>
             </div>
             <div className="flex flex-wrap gap-4 mt-3">
               <div className="flex items-center border px-2.5 py-1 rounded-full bg-blue-50 border-blue-200">
-                <span className="text-xl mr-1 text-blue-600">₫</span>
                 <span className="text-sm font-medium text-blue-700">
-                  {lotData.pricePerHour.toLocaleString('vi-VN')}đ/giờ
+                  {lotData.pricePerHour.toLocaleString('vi-VN')} đ/giờ
                 </span>
               </div>
               <div className="flex items-center border px-2.5 py-1 rounded-full bg-green-50 border-green-200">
-                <span className="text-xl mr-1 text-green-600">₫</span>
                 <span className="text-sm font-medium text-green-700">
-                  {lotData.pricePerDay.toLocaleString('vi-VN')}đ/ngày
+                  {lotData.pricePerDay.toLocaleString('vi-VN')} đ/ngày
                 </span>
               </div>
               <div className="flex items-center border px-2.5 py-1 rounded-full bg-purple-50 border-purple-200">
-                <span className="text-xl mr-1 text-purple-600">₫</span>
                 <span className="text-sm font-medium text-purple-700">
-                  {lotData.pricePerMonth.toLocaleString('vi-VN')}đ/tháng
+                  {lotData.pricePerMonth.toLocaleString('vi-VN')} đ/tháng
                 </span>
               </div>
             </div>
@@ -715,11 +710,6 @@ export default function ParkingLotDetailPage() {
                 </div>
               </DialogContent>
             </Dialog>
-
-            <Button className="flex gap-2 items-center">
-              <PlusCircle className="h-4 w-4" />
-              Thêm khu vực
-            </Button>
           </div>
         </div>
       </div>

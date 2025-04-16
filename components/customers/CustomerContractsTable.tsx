@@ -23,58 +23,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle } from "lucide-react"; // Icon for add button
 
 interface CustomerContractsTableProps {
-  contracts: Contract[];
-  onAddContractClickAction: () => void; // Function to open the Add Contract modal
+  contracts: Contract[]
 }
 
 export function CustomerContractsTable({
-  contracts,
-  onAddContractClickAction,
+  contracts
 }: CustomerContractsTableProps) {
   // Define Table Columns based on Contract type and expected display
   const columns = React.useMemo<ColumnDef<Contract>[]>(
     () => [
       // Adjust accessorKey and formatting based on your Contract type
       { accessorKey: "contractId", header: "ID" }, // Example: Assuming 'contractId' exists
-      { accessorKey: "parkingSpaceName", header: "Lot" }, // Example: Need name from related space? Or display space ID? Adjust as needed.
+      { accessorKey: "parkingSpaceName", header: "Bãi đỗ" }, // Example: Need name from related space? Or display space ID? Adjust as needed.
       {
-        header: "Period",
+        header: "Thời hạn",
         cell: ({ row }) =>
           `${formatDate(row.original.startDate)} - ${formatDate(row.original.endDate)}`, // Example: Format dates
       },
       {
         accessorKey: "vehicleModel",
-        header: "Vehicle",
+        header: "Phương tiện",
         cell: ({ row }) =>
           `${row.original.car.model || "N/A"} (${row.original.car.licensePlate || "N/A"})`,
       }, // Example: Assuming license plate is available directly or via relation
       {
         accessorKey: "status",
-        header: "Status",
+        header: "Trạng thái",
         cell: ({ row }) => {
           const status = row.original.status as number | string; // Handle potential number/string status
           // Map status codes/strings to text and badge variants
-          let text = "Unknown";
+          let text = "Không xác định";
           let variant: "default" | "secondary" | "destructive" | "outline" =
             "secondary";
           // Example mapping (adjust based on your actual status values)
           if (status === 1 || String(status).toLowerCase().includes("active")) {
-            text = "Active";
+            text = "Đang hoạt động";
             variant = "default";
           } else if (
             status === 2 ||
             String(status).toLowerCase() === "inactive"
           ) {
-            text = "Inactive";
+            text = "Không hoạt động";
             variant = "destructive";
           } else if (
             status === 3 ||
             String(status).toLowerCase() === "expired"
           ) {
-            text = "Expired";
+            text = "Hết hạn";
             variant = "outline";
           } // Add other statuses...
 
@@ -112,18 +109,14 @@ export function CustomerContractsTable({
     try {
       return new Date(dateString).toLocaleDateString("en-GB"); // Format as dd/mm/yyyy
     } catch {
-      return "Invalid Date";
+      return "Ngày không hợp lệ";
     }
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <CardTitle className="text-lg font-medium">Parking Contracts</CardTitle>
-        {/* Button to trigger the modal via prop function */}
-        <Button size="sm" variant="outline" onClick={onAddContractClickAction}>
-          <PlusCircle className="w-4 h-4 mr-2" /> Create Contract
-        </Button>
+        <CardTitle className="text-lg font-medium">Hợp đồng đỗ xe</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
@@ -136,9 +129,9 @@ export function CustomerContractsTable({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -164,7 +157,7 @@ export function CustomerContractsTable({
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No contracts found for this customer.
+                    Không tìm thấy hợp đồng nào cho khách hàng này.
                   </TableCell>
                 </TableRow>
               )}
@@ -174,7 +167,7 @@ export function CustomerContractsTable({
         {/* Pagination Controls */}
         <div className="flex items-center justify-between space-x-2 pt-4">
           <div className="text-sm text-muted-foreground">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            Trang {table.getState().pagination.pageIndex + 1} của{" "}
             {table.getPageCount()}
           </div>
           <div className="space-x-2">
@@ -184,7 +177,7 @@ export function CustomerContractsTable({
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              Previous
+              Trước
             </Button>
             <Button
               variant="outline"
@@ -192,7 +185,7 @@ export function CustomerContractsTable({
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              Next
+              Sau
             </Button>
           </div>
         </div>

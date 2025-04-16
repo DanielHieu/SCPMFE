@@ -140,15 +140,15 @@ export default function CustomerPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      {/* Header section */}
+      <Breadcrumb
+        items={[
+          { label: "Trang chủ", href: "/dashboard" },
+          { label: "Quản lý khách hàng" }
+        ]}
+      />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <Breadcrumb
-            items={[
-              { label: "Trang chủ", href: "/dashboard" },
-              { label: "Quản lý khách hàng" }
-            ]}
-          />
+
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
             Khách hàng
           </h1>
@@ -191,7 +191,7 @@ export default function CustomerPage() {
                 }
               >
                 <DropdownMenuRadioItem value="all">
-                  Tất cả khách hàng ({counts.all})
+                  Tất cả ({counts.all})
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="active">
                   Đang hoạt động ({counts.active})
@@ -203,24 +203,6 @@ export default function CustomerPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Add customer button */}
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-10 w-full md:w-auto">
-                <PlusCircle className="w-4 h-4 mr-2" />
-                Thêm khách hàng
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Thêm khách hàng</DialogTitle>
-              </DialogHeader>
-              <CustomerForm
-                onSubmitAction={handleAddCustomer}
-                onCancelAction={() => setIsAddModalOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 

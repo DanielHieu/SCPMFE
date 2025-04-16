@@ -12,14 +12,13 @@ export function CustomerFeedbackList({ feedback }: CustomerFeedbackListProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium">Customer Feedback</CardTitle>
+        <CardTitle className="text-lg font-medium">Phản hồi khách hàng</CardTitle>
         <Button
           size="sm"
           variant="outline"
-          onClick={() => alert("Navigate to full feedback list")}
+          onClick={() => alert("Chuyển đến danh sách phản hồi đầy đủ")}
         >
-          {" "}
-          View All Feedback
+          Xem tất cả phản hồi
         </Button>
       </CardHeader>
       <CardContent>
@@ -44,7 +43,7 @@ export function CustomerFeedbackList({ feedback }: CustomerFeedbackListProps) {
           </ul>
         ) : (
           <p className="text-sm text-center text-gray-500 py-4">
-            No feedback submitted.
+            Chưa có phản hồi nào.
           </p>
         )}
       </CardContent>

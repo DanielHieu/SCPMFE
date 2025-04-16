@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
-import { searchContracts, addContract } from "@/lib/api/contract.api";
+import { searchContracts } from "@/lib/api/contract.api";
 import { Contract } from "@/types/contract";
 import Link from "next/link";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -36,8 +36,6 @@ export default function ContractsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingContract, setEditingContract] = useState<Contract | null>(null);
     const [counts, setCounts] = useState({
         all: 0,
         active: 0,
@@ -119,43 +117,17 @@ export default function ContractsPage() {
         }
     };
 
-    // Handle editing a contract
-    const handleEditClick = (contract: Contract) => {
-        setEditingContract(contract);
-        setIsEditModalOpen(true);
-    };
-
-    // Handle updating a contract
-    const handleUpdateContract = async (data: any) => {
-        try {
-            // Replace with actual API call
-            // const response = await fetch(`/api/contracts/${data.contractId}`, {
-            //   method: "PUT",
-            //   headers: { "Content-Type": "application/json" },
-            //   body: JSON.stringify(data),
-            // });
-            // if (!response.ok) throw new Error("Failed to update contract");
-
-            // For demo purposes
-            toast.success("Hợp đồng đã được cập nhật thành công");
-            setIsEditModalOpen(false);
-            setEditingContract(null);
-            fetchContracts();
-        } catch (err) {
-            toast.error("Lỗi khi cập nhật hợp đồng: " + (err instanceof Error ? err.message : "Unknown error"));
-        }
-    };
-
     return (
         <div className="container mx-auto py-6 space-y-6">
-            {/* Breadcrumb */}
-            <Breadcrumb
-                items={[
-                    { label: "Trang chủ", href: "/dashboard" },
-                    { label: "Quản lý hợp đồng" }
-                ]}
-            />
-            
+            <div className="space-y-6 w-full">
+                {/* Breadcrumb */}
+                <Breadcrumb
+                    items={[
+                        { label: "Trang chủ", href: "/dashboard" },
+                        { label: "Quản lý hợp đồng" }
+                    ]}
+                />
+            </div>
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold tracking-tight">Quản lý hợp đồng</h1>
             </div>

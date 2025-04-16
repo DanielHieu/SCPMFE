@@ -5,13 +5,11 @@ import {
   getCustomerById,
   getCustomerVehicles,
   getCustomerFeedback,
-  addContract,
-  addVehicle,
-  updateVehicle,
-  deleteVehicle,
+  getContractsOfCustomer,
 } from "@/lib/api";
-import { useParams } from "next/navigation";
-import { toast } from "sonner";
+import { useParams, useRouter } from "next/navigation";
+import { Toaster, toast } from "sonner";
+import Image from "next/image";
 
 // Import Types
 import {
@@ -19,34 +17,27 @@ import {
   Car,
   Contract,
   Feedback,
-  AddContractPayload,
-  AddVehiclePayload,
-  UpdateVehiclePayload,
 } from "@/types";
 
 // Import sub-components
-import { EditableCustomerInfoCard } from "@/components/customers/EditableCustomerInfoCard";
 import { CustomerContractsTable } from "@/components/customers/CustomerContractsTable";
-import { CustomerVehiclesTable } from "@/components/customers/CustomerVehiclesTable";
 import { CustomerFeedbackList } from "@/components/customers/CustomerFeedbackList";
-import { AddContractForm } from "@/components/contracts/AddContractForm"; // Add Contract form
 
 // Import UI Components
-import {
-  Breadcrumb
-} from "@/components/ui/breadcrumb";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { VehicleForm } from "@/components/vehicles/VehicleForm";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Mail, Phone, Info, RefreshCw, ArrowLeft, Car as CarIcon, FileText, MessageSquare, Calendar, User, MapPin } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 
 export default function CustomerDetailPage() {
   // Hooks
   const params = useParams();
+  const router = useRouter();
   const customerId = parseInt(params.customerId as string, 10);
 
   // State for fetched data
@@ -56,11 +47,8 @@ export default function CustomerDetailPage() {
   const [feedbackData, setFeedbackData] = useState<Feedback[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isAddContractModalOpen, setIsAddContractModalOpen] = useState(false);
-  const [isAddVehicleModalOpen, setIsAddVehicleModalOpen] = useState(false);
-  const [isEditVehicleModalOpen, setIsEditVehicleModalOpen] = useState(false);
-  const [editingVehicle, setEditingVehicle] = useState<Car | null>(null);
 
   const fetchData = useCallback(
     async (showLoading = true) => {
@@ -69,19 +57,27 @@ export default function CustomerDetailPage() {
         setIsLoading(false);
         return;
       }
-      if (showLoading) setIsLoading(true);
+
+      if (showLoading) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+
       setError(null);
-      console.log(`Fetching data for customer ID: ${customerId}`);
+
       try {
         const results = await Promise.allSettled([
           getCustomerById(customerId),
           getCustomerVehicles(customerId),
           getCustomerFeedback(customerId),
+          getContractsOfCustomer(customerId),
         ]);
 
         const customerResult = results[0];
         const vehiclesResult = results[1];
         const feedbackResult = results[2];
+        const contractsResult = results[3];
 
         if (customerResult.status === "rejected" || !customerResult.value) {
           console.error(
@@ -94,8 +90,6 @@ export default function CustomerDetailPage() {
           setCustomerData(null); // Clear potentially stale data
         } else {
           setCustomerData(customerResult.value);
-          // We'll handle contracts separately since they're not directly part of Customer type
-          // Try to get contracts from API or leave as empty array
         }
 
         if (vehiclesResult.status === "fulfilled") {
@@ -109,6 +103,16 @@ export default function CustomerDetailPage() {
         } else {
           console.error("Failed feedback fetch:", feedbackResult.reason);
         }
+
+        if (contractsResult.status === "fulfilled") {
+          setContractsData(contractsResult.value || []);
+        } else {
+          console.error("Failed contracts fetch:", contractsResult.reason);
+        }
+
+        if (!showLoading) {
+          toast.success("Dữ liệu đã được cập nhật");
+        }
       } catch (err) {
         console.error("Failed overall fetch:", err);
         setError(
@@ -116,8 +120,13 @@ export default function CustomerDetailPage() {
             ? err.message
             : "Failed to load customer details",
         );
+
+        if (!showLoading) {
+          toast.error("Không thể cập nhật dữ liệu");
+        }
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
     },
     [customerId],
@@ -128,273 +137,476 @@ export default function CustomerDetailPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleAddContractSubmit = async (payload: AddContractPayload) => {
-    try {
-      await addContract(payload);
-      toast.success("Contract created. Status is Pending Payment.");
-
-      setIsAddContractModalOpen(false);
-      fetchData();
-    } catch (error) {
-      console.error("Failed to create contract:", error);
-      toast.error(
-        `Failed to create contract: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    }
-  };
-
-  const handleAddVehicleSubmit = async (
-    formData: Omit<AddVehiclePayload, "customerId">,
-  ) => {
-    const payload: AddVehiclePayload = { ...formData, customerId: customerId };
-    try {
-      await addVehicle(payload);
-      toast.success("Vehicle added.");
-      setIsAddVehicleModalOpen(false);
-      fetchData(false); // Refresh data without full loading indicator
-    } catch (error) {
-      toast.error(`Failed: ${error}`);
-    }
-  };
-
-  const handleEditVehicleClick = (vehicle: Car) => {
-    setEditingVehicle(vehicle);
-    setIsEditVehicleModalOpen(true);
-  };
-
-  // BUG: Updating with the same liensePlate is error
-  const handleUpdateVehicleSubmit = async (
-    formData: Omit<UpdateVehiclePayload, "customerId" | "carId">,
-  ) => {
-    if (!editingVehicle) return;
-    const payload: UpdateVehiclePayload = {
-      ...formData,
-      carId: editingVehicle.carId,
-      customerId: customerId,
-    };
-    try {
-      await updateVehicle(payload);
-      toast.success("Vehicle updated.");
-      setIsEditVehicleModalOpen(false);
-      setEditingVehicle(null);
-      fetchData(false);
-    } catch (error) {
-      toast.error(`Failed: ${error}`);
-    }
-  };
-
-  const handleDeleteVehicleClick = async (carId: number) => {
-    if (window.confirm("Are you sure you want to delete this vehicle?")) {
-      try {
-        await deleteVehicle(carId);
-        toast.success("Vehicle deleted.");
-        fetchData(false);
-      } catch (error) {
-        toast.error(`Failed: ${error}`);
-      }
-    } else {
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 text-center">
-        Loading customer details...
+      <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6">
+        <div className="space-y-6">
+          <div className="flex items-center">
+            <Skeleton className="h-8 w-64" />
+          </div>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col space-y-4">
+                <Skeleton className="h-10 w-3/4" />
+                <div className="flex flex-wrap gap-4">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+                <Skeleton className="h-0.5 w-full mt-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-48" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-48" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-48" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-32" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader className="pb-0">
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-[200px] w-full rounded-lg" />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-0">
+                  <Skeleton className="h-6 w-40" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Skeleton className="h-20 w-full rounded-md" />
+                    <Skeleton className="h-20 w-full rounded-md" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader className="pb-0">
+                  <Skeleton className="h-6 w-40" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-64 w-full rounded-md" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto py-6 text-red-500 p-4 text-center">
-        Error: {error}
+      <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center max-w-2xl mx-auto shadow-sm">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-6">
+            <Info className="h-8 w-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-red-800 mb-3">Đã xảy ra lỗi</h3>
+          <p className="text-red-600 mb-6">{error}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => router.push('/customers')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại danh sách
+            </Button>
+            <Button
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+              onClick={() => fetchData()}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Thử lại
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!customerData) {
     return (
-      <div className="container mx-auto py-6 text-center">
-        Customer data could not be loaded.
+      <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center max-w-2xl mx-auto shadow-sm">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 mb-6">
+            <Info className="h-8 w-8 text-amber-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-amber-800 mb-3">Không tìm thấy dữ liệu</h3>
+          <p className="text-amber-600 mb-6">Không thể tải thông tin khách hàng hoặc khách hàng không tồn tại.</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => router.push('/customers')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại danh sách
+            </Button>
+            <Button
+              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700"
+              onClick={() => fetchData()}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Thử lại
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="container mx-auto py-6 space-y-6">
-        <Breadcrumb items={[{
-          label: "Trang chủ",
-          href: "/dashboard",
-        }, {
-          label: "Quản lý khách hàng",
-          href: "/customers",
-        }, {
-          label: "Chi tiết khách hàng",
-        }]}>
-        </Breadcrumb>
+      <Toaster position="top-right" richColors closeButton />
+      <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <Breadcrumb
+            items={[
+              {
+                label: "Trang chủ",
+                href: "/dashboard",
+              },
+              {
+                label: "Quản lý khách hàng",
+                href: "/customers",
+              },
+              {
+                label: "Chi tiết khách hàng",
+              }
+            ]}
+          />
 
-        {/* Page Header with Quick Info */}
-        <div className="bg-white rounded-lg border shadow-sm p-6 mb-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                {customerData.firstName} {customerData.lastName}
-              </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-gray-500">
-                {customerData.email && (
-                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                      <polyline points="22,6 12,13 2,6"></polyline>
-                    </svg>
-                    <span>{customerData.email}</span>
-                  </div>
-                )}
-                {customerData.phone && (
-                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                    <span>{customerData.phone}</span>
-                  </div>
-                )}
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 16v-4"></path>
-                    <path d="M12 8h.01"></path>
-                  </svg>
-                  <span className={customerData.isActive ? "text-green-600" : "text-red-600"}>
-                    {customerData.isActive ? "Đang hoạt động" : "Không hoạt động"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap md:flex-nowrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsAddVehicleModalOpen(true)}
-                className="whitespace-nowrap"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <path d="M6 9h12" />
-                  <path d="M6 4v3" />
-                  <path d="M18 4v3" />
-                  <circle cx="9" cy="16" r="1" />
-                  <circle cx="15" cy="16" r="1" />
-                </svg>
-                Thêm xe
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setIsAddContractModalOpen(true)}
-                className="whitespace-nowrap"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-                Tạo hợp đồng
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => router.push('/customers')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => fetchData(false)}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Đang cập nhật...' : 'Cập nhật'}
+            </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Vehicle section - 1/3 width */}
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-1 rounded-lg">
-              <CustomerVehiclesTable
-                vehicles={vehiclesData}
-                onAddClickAction={() => setIsAddVehicleModalOpen(true)}
-                onEditClickAction={handleEditVehicleClick}
-                onDeleteClickAction={handleDeleteVehicleClick}
-              />
-            </div>
+        {/* Customer Profile Header */}
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="md:w-1/3">
+            <Card className="border-none shadow-md overflow-hidden">
+              <div className="bg-gradient-to-br from-primary/20 to-primary/5 p-6 flex flex-col items-center">
+                <Avatar className="h-24 w-24 border-4 border-white shadow-md">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                    {customerData.firstName?.charAt(0)}{customerData.lastName?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <h1 className="mt-4 text-xl font-bold text-center">
+                  {customerData.firstName} {customerData.lastName}
+                </h1>
+                <Badge
+                  variant={customerData.isActive ? "secondary" : "destructive"}
+                  className={`mt-2 rounded-full px-3 py-1 ${customerData.isActive ? 'bg-emerald-100 text-emerald-800' : ''}`}
+                >
+                  {customerData.isActive ? "Đang hoạt động" : "Không hoạt động"}
+                </Badge>
+                <div className="w-full mt-6 space-y-3">
+                  {customerData.email && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Mail className="h-4 w-4 text-primary/70 flex-shrink-0" />
+                      <span className="truncate">{customerData.email}</span>
+                    </div>
+                  )}
+                  {customerData.phone && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Phone className="h-4 w-4 text-primary/70 flex-shrink-0" />
+                      <span>{customerData.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Thông tin khách hàng</h3>
+                    <Separator className="my-2" />
+                    <dl className="grid grid-cols-1 gap-3 text-sm">
+                      <div className="flex justify-between">
+                        <dt className="text-gray-500">ID khách hàng:</dt>
+                        <dd className="font-medium">{customerData.customerId}</dd>
+                      </div>
+                    </dl>
+                  </div>
 
-            <CustomerFeedbackList feedback={feedbackData} />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Thống kê</h3>
+                    <Separator className="my-2" />
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div className="bg-blue-50 rounded-lg p-3 text-center">
+                        <p className="text-xs text-blue-600 font-medium">Phương tiện</p>
+                        <p className="text-2xl font-bold text-blue-700">{vehiclesData.length}</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-3 text-center">
+                        <p className="text-xs text-amber-600 font-medium">Hợp đồng</p>
+                        <p className="text-2xl font-bold text-amber-700">{contractsData.length}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Main content - 2/3 width */}
-          <div className="lg:col-span-2 space-y-6">
-            <EditableCustomerInfoCard initialData={customerData} />
+          <div className="md:w-2/3">
+            <Tabs defaultValue="overview" className="w-full">
+              <Card className="border-none shadow-md">
+                <CardHeader className="px-6 py-4 border-b">
+                  <TabsList className="grid grid-cols-4 w-full">
+                    <TabsTrigger value="overview" className="flex items-center gap-2 text-xs md:text-sm">
+                      <Info className="h-4 w-4" />
+                      <span className="hidden md:inline">Tổng quan</span>
+                      <span className="md:hidden">Tổng quan</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="contracts" className="flex items-center gap-2 text-xs md:text-sm">
+                      <FileText className="h-4 w-4" />
+                      <span className="hidden md:inline">Hợp đồng</span>
+                      <span className="md:hidden">Hợp đồng</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="vehicles" className="flex items-center gap-2 text-xs md:text-sm">
+                      <CarIcon className="h-4 w-4" />
+                      <span className="hidden md:inline">Phương tiện</span>
+                      <span className="md:hidden">Phương tiện</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="feedback" className="flex items-center gap-2 text-xs md:text-sm">
+                      <MessageSquare className="h-4 w-4" />
+                      <span className="hidden md:inline">Phản hồi</span>
+                      <span className="md:hidden">Phản hồi</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <TabsContent value="overview" className="mt-0">
+                    <div className="space-y-6">
+                      {/* Recent Contracts */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary/70" />
+                            Hợp đồng gần đây
+                          </h3>
+                        </div>
+                        {contractsData.length > 0 ? (
+                          <div className="rounded-lg border overflow-hidden">
+                            <CustomerContractsTable contracts={contractsData.slice(0, 3)} />
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+                            <FileText className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-500">Khách hàng chưa có hợp đồng nào</p>
+                          </div>
+                        )}
+                      </div>
 
-            <CustomerContractsTable
-              contracts={contractsData}
-              onAddContractClickAction={() => setIsAddContractModalOpen(true)}
-            />
+                      {/* Vehicles */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <CarIcon className="h-5 w-5 text-primary/70" />
+                            Phương tiện
+                          </h3>
+                        </div>
+                        {vehiclesData.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {vehiclesData.slice(0, 2).map((vehicle) => (
+                              <Card key={vehicle.carId} className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                                <div className="relative h-36 w-full bg-gray-100">
+                                  {vehicle.thumbnail ? (
+                                    <Image
+                                      src={vehicle.thumbnail}
+                                      alt={`${vehicle.brand} ${vehicle.model}`}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex items-center justify-center h-full w-full bg-gray-200">
+                                      <CarIcon className="h-12 w-12 text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                                <CardContent className="p-4">
+                                  <h4 className="font-medium text-primary">{vehicle.brand} {vehicle.model}</h4>
+                                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                      <p className="text-xs text-gray-500">Biển số</p>
+                                      <p className="font-medium">{vehicle.licensePlate}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500">Màu sắc</p>
+                                      <p className="font-medium">{vehicle.color}</p>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+                            <CarIcon className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-500">Khách hàng chưa có phương tiện nào</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Recent Feedback */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <MessageSquare className="h-5 w-5 text-primary/70" />
+                            Phản hồi gần đây
+                          </h3>
+                        </div>
+                        <CustomerFeedbackList feedback={feedbackData.slice(0, 2)} />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="contracts" className="mt-0">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Danh sách hợp đồng</h3>
+                      </div>
+                      {contractsData.length > 0 ? (
+                        <div className="rounded-lg border overflow-hidden">
+                          <CustomerContractsTable contracts={contractsData} />
+                        </div>
+                      ) : (
+                        <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed">
+                          <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-600 mb-2">Chưa có hợp đồng nào</h3>
+                          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                            Khách hàng này chưa có hợp đồng nào trong hệ thống.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="vehicles" className="mt-0">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Danh sách phương tiện</h3>
+                      </div>
+                      {vehiclesData.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {vehiclesData.map((vehicle) => (
+                            <Card key={vehicle.carId} className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                              <div className="relative h-48 w-full bg-gray-100">
+                                {vehicle.thumbnail ? (
+                                  <Image
+                                    src={vehicle.thumbnail}
+                                    alt={`${vehicle.brand} ${vehicle.model}`}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex items-center justify-center h-full w-full bg-gray-200">
+                                    <CarIcon className="h-16 w-16 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                              <CardContent className="p-4">
+                                <h4 className="font-medium text-lg text-primary">{vehicle.brand} {vehicle.model}</h4>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                  <div>
+                                    <p className="text-xs text-gray-500">Biển số</p>
+                                    <p className="font-medium">{vehicle.licensePlate}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500">Màu sắc</p>
+                                    <p className="font-medium">{vehicle.color}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500">Trạng thái</p>
+                                    <Badge variant="outline" className="mt-1">
+                                      {vehicle.status || "Đang hoạt động"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <div className="mt-4 flex justify-end">
+                                  <Button variant="outline" size="sm">Xem chi tiết</Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed">
+                          <CarIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-600 mb-2">Chưa có phương tiện nào</h3>
+                          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                            Khách hàng này chưa đăng ký phương tiện nào trong hệ thống.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="feedback" className="mt-0">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Lịch sử phản hồi</h3>
+                      {feedbackData.length > 0 ? (
+                        <CustomerFeedbackList feedback={feedbackData} />
+                      ) : (
+                        <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed">
+                          <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-600 mb-2">Chưa có phản hồi nào</h3>
+                          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                            Khách hàng này chưa gửi phản hồi nào trong hệ thống.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </CardContent>
+              </Card>
+            </Tabs>
           </div>
         </div>
       </div>
-
-      <Dialog
-        open={isAddContractModalOpen}
-        onOpenChange={setIsAddContractModalOpen}
-      >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              Create New Contract for {customerData.firstName}{" "}
-              {customerData.lastName}
-            </DialogTitle>
-          </DialogHeader>
-          {customerData && vehiclesData && (
-            <AddContractForm
-              customerId={customerId}
-              customerName={`${customerData.firstName} ${customerData.lastName}`}
-              customerVehicles={vehiclesData} // Pass fetched vehicles
-              onSubmitAction={handleAddContractSubmit}
-              onCancelAction={() => setIsAddContractModalOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={isAddVehicleModalOpen}
-        onOpenChange={setIsAddVehicleModalOpen}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add New Vehicle</DialogTitle>
-          </DialogHeader>
-          <VehicleForm
-            onSubmitAction={handleAddVehicleSubmit}
-            onCancelAction={() => setIsAddVehicleModalOpen(false)}
-            key="add-vehicle" // Ensure form resets if opened again
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={isEditVehicleModalOpen}
-        onOpenChange={(open) => {
-          if (!open) setEditingVehicle(null);
-          setIsEditVehicleModalOpen(open);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Vehicle</DialogTitle>
-          </DialogHeader>
-          {editingVehicle && (
-            <VehicleForm
-              onSubmitAction={handleUpdateVehicleSubmit}
-              initialData={editingVehicle}
-              onCancelAction={() => {
-                setIsEditVehicleModalOpen(false);
-                setEditingVehicle(null);
-              }}
-              key={`edit-vehicle-${editingVehicle.carId}`}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
