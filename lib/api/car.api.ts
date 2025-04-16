@@ -24,8 +24,8 @@ export async function updateVehicle(
 ): Promise<Car> {
   // Assuming API returns the updated vehicle
   // API requires carId and customerId in the body
-  if (!payload.carId || !payload.customerId) {
-    throw new Error("Car ID and Customer ID are required for update.");
+  if (!payload.carId) {
+    throw new Error("Car ID  are required for update.");
   }
   return await fetchApi(`/Car/Update`, {
     method: "PUT",
