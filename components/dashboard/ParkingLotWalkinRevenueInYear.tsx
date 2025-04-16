@@ -153,7 +153,7 @@ export default function ParkingLotWalkinRevenueInYear({ year }: { year: number }
                                 <TabsList className="grid grid-cols-3 mb-6">
                                     <TabsTrigger value="monthly">Theo Tháng</TabsTrigger>
                                     <TabsTrigger value="quarterly">Theo Quý</TabsTrigger>
-                                    <TabsTrigger value="yearly">Theo Bãi Đỗ Xe</TabsTrigger>
+                                    <TabsTrigger value="yearly">Theo năm</TabsTrigger>
                                 </TabsList>
 
                                 <TabsContent value="monthly">
@@ -223,7 +223,7 @@ export default function ParkingLotWalkinRevenueInYear({ year }: { year: number }
                                             <YAxis type="category" dataKey="name" label={{ value: 'Bãi Đỗ Xe', angle: -90, position: 'insideLeft' }} width={150} />
                                             <Tooltip formatter={(value) => [`${Number(value).toLocaleString('vi-VN')} ₫`]} />
                                             <Legend />
-                                            <Bar dataKey="totalRevenue" fill="#ffc658" name="Doanh Thu" />
+                                            <Bar dataKey="revenue" fill="#ffc658" name="Doanh Thu" />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </TabsContent>

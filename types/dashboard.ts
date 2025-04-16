@@ -12,6 +12,7 @@ export interface DashboardStats {
 export interface ParkingLotRevenue{
   parkingLotName: string;
   totalRevenue: number;
+  revenue: number;
 }
 
 export interface WailkinDateRevenue{

@@ -86,6 +86,7 @@ export default function ParkingLotContractRevenueInYear({ year }: { year: number
             month: value.month,
             parkingLotRevenues: data.filter(x => x.month == value.month).map(x => ({
                 parkingLotName: x.parkingLotName,
+                revenue: x.revenue,
                 totalRevenue: x.revenue
             }))
         }));
@@ -111,9 +112,10 @@ export default function ParkingLotContractRevenueInYear({ year }: { year: number
                         map.set(key, current + item.revenue);
                         return map;
                     }, new Map<string, number>())
-            ).map(([parkingLotName, totalRevenue]) => ({
+            ).map(([parkingLotName, calculatedRevenue]) => ({
                 parkingLotName,
-                totalRevenue
+                revenue: calculatedRevenue,
+                totalRevenue: calculatedRevenue
             }))
         }));
     };
@@ -127,9 +129,10 @@ export default function ParkingLotContractRevenueInYear({ year }: { year: number
                 map.set(key, current + item.revenue);
                 return map;
             }, new Map<string, number>())
-        ).map(([parkingLotName, totalRevenue]) => ({
+        ).map(([parkingLotName, calculatedRevenue]) => ({
             parkingLotName,
-            totalRevenue
+            revenue: calculatedRevenue,
+            totalRevenue: calculatedRevenue
         }));
     };
 
@@ -150,7 +153,7 @@ export default function ParkingLotContractRevenueInYear({ year }: { year: number
                                 <TabsList className="grid grid-cols-3 mb-6">
                                     <TabsTrigger value="monthly">Theo Tháng</TabsTrigger>
                                     <TabsTrigger value="quarterly">Theo Quý</TabsTrigger>
-                                    <TabsTrigger value="yearly">Theo Bãi Đỗ Xe</TabsTrigger>
+                                    <TabsTrigger value="yearly">Theo năm</TabsTrigger>
                                 </TabsList>
 
                                 <TabsContent value="monthly">
@@ -158,7 +161,7 @@ export default function ParkingLotContractRevenueInYear({ year }: { year: number
                                         <BarChart
                                             data={monthlyData.map(month => ({
                                                 name: `Tháng ${month.month}`,
-                                                ...Object.fromEntries(month.parkingLotRevenues.map(lot => [lot.parkingLotName, lot.totalRevenue]))
+                                                ...Object.fromEntries(month.parkingLotRevenues.map(lot => [lot.parkingLotName, lot.revenue]))
                                             }))}
                                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                         >
@@ -184,7 +187,7 @@ export default function ParkingLotContractRevenueInYear({ year }: { year: number
                                         <BarChart
                                             data={quarterlyData.map(quarter => ({
                                                 name: `Quý ${quarter.quarter}`,
-                                                ...Object.fromEntries(quarter.parkingLotRevenues.map(lot => [lot.parkingLotName, lot.totalRevenue]))
+                                                ...Object.fromEntries(quarter.parkingLotRevenues.map(lot => [lot.parkingLotName, lot.revenue]))
                                             }))}
                                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                         >
@@ -210,7 +213,7 @@ export default function ParkingLotContractRevenueInYear({ year }: { year: number
                                         <BarChart
                                             data={yearlyData.map(lot => ({
                                                 name: lot.parkingLotName,
-                                                revenue: lot.totalRevenue
+                                                revenue: lot.revenue
                                             }))}
                                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                             layout="vertical"

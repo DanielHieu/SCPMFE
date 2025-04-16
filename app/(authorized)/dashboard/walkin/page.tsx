@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ParkingLotContractRevenueInYear from "@/components/dashboard/ParkingLotContractRevenueInYear";
+import ParkingLotWalkinRevenueInYear from "@/components/dashboard/ParkingLotWalkinRevenueInYear";
 
 export default function ContractDashboardPage() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -32,7 +33,7 @@ export default function ContractDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <ParkingLotContractRevenueInYear year={selectedYear} />
+        <ParkingLotWalkinRevenueInYear year={selectedYear} />
       </div>
     </div>
   );

@@ -100,7 +100,7 @@ export default function DashboardPage() {
                                             }}
                                         />
                                         <Bar
-                                            dataKey="totalRevenue"
+                                            dataKey="revenue"
                                             fill="#3b82f6"
                                             name="Doanh thu"
                                             radius={[0, 4, 4, 0]}
