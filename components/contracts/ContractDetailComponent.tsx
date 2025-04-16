@@ -220,6 +220,14 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                     <p className="text-sm font-medium text-gray-500">Vị trí</p>
                                     <p className="mt-1">{contract.parkingSpaceName}</p>
                                 </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Khu vực</p>
+                                    <p className="mt-1">{contract.areaName || "Không có thông tin"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Tầng</p>
+                                    <p className="mt-1">{contract.floorName || "Không có thông tin"}</p>
+                                </div>
                                 <div className="md:col-span-2">
                                     <p className="text-sm font-medium text-gray-500">Địa chỉ</p>
                                     <p className="mt-1">{contract.parkingLotAddress}</p>

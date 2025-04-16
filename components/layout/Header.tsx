@@ -10,11 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Bell, LogOut, Menu, Search, Settings } from "lucide-react";
+import { Bell, LogOut, Menu, Settings } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 
 interface HeaderProps {
   toggleSidebarAction: () => void;
@@ -23,7 +22,6 @@ interface HeaderProps {
 
 export default function Header({ toggleSidebarAction, isScrolled = false }: HeaderProps) {
   const { data: session, status } = useSession();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/auth/login" });
@@ -46,12 +44,12 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
   return (
     <header className={cn(
       "bg-white z-10 transition-all duration-200 sticky top-0",
-      isScrolled 
-        ? "shadow-md border-transparent" 
+      isScrolled
+        ? "shadow-md border-transparent"
         : "border-b border-gray-200",
       "p-4 flex justify-between items-center h-16 flex-shrink-0"
     )}>
-      {/* Left side - Menu button and search */}
+      {/* Left side - Menu button */}
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -61,27 +59,6 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
         >
           <Menu className="h-5 w-5" />
         </Button>
-        
-        {/* Conditionally show search input when open */}
-        {isSearchOpen ? (
-          <div className="relative hidden md:block w-64 lg:w-80">
-            <input
-              type="text"
-              className="pl-9 pr-4 py-2 w-full rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Tìm kiếm..."
-            />
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-          </div>
-        ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSearchOpen(true)}
-            className="hidden md:flex text-gray-500 hover:text-gray-700"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-        )}
       </div>
 
       {/* Right side - Notifications, settings, user menu */}
@@ -96,7 +73,7 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
               <Bell className="h-5 w-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </Button>
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -104,9 +81,9 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
             >
               <Settings className="h-5 w-5" />
             </Button>
-            
+
             <div className="h-6 border-l border-gray-200 mx-1 hidden md:block"></div>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full overflow-hidden">

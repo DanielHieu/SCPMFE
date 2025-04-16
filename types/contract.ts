@@ -6,6 +6,8 @@ export interface Contract {
   parkingSpaceName: string;
   parkingLotName: string;
   parkingLotAddress: string;
+  areaName: string;
+  floorName: string;
   startDate: string;
   endDate: string;
   status: string;
