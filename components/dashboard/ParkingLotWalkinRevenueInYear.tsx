@@ -89,6 +89,7 @@ export default function ParkingLotWalkinRevenueInYear({ year }: { year: number }
             month: value.month,
             parkingLotRevenues: data.filter(x => x.month == value.month).map(x => ({
                 parkingLotName: x.parkingLotName,
+                revenue: x.revenue,
                 totalRevenue: x.revenue
             }))
         }));
@@ -116,7 +117,8 @@ export default function ParkingLotWalkinRevenueInYear({ year }: { year: number }
                     }, new Map<string, number>())
             ).map(([parkingLotName, totalRevenue]) => ({
                 parkingLotName,
-                totalRevenue
+                revenue: totalRevenue,
+                totalRevenue: totalRevenue
             }))
         }));
     };
@@ -132,7 +134,8 @@ export default function ParkingLotWalkinRevenueInYear({ year }: { year: number }
             }, new Map<string, number>())
         ).map(([parkingLotName, totalRevenue]) => ({
             parkingLotName,
-            totalRevenue
+            revenue: totalRevenue,
+            totalRevenue: totalRevenue
         }));
     };
 
