@@ -1,4 +1,4 @@
-import { , Car,  } from "@/types/car";
+import {  Car,  } from "@/types/car";
 import { fetchApi } from "./api-helper";
 
 //GET /api/Car/GetCarsOfCustomer?customerId={customerId}
