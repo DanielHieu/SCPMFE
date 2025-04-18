@@ -81,7 +81,7 @@ export default function StaffDetailPage() {
 
     try {
       const payload: UpdateStaffPayload = {
-        staffAccountId: staffId,
+        staffId: staffId,
         firstName: staffData.firstName,
         lastName: staffData.lastName,
         phone: staffData.phone,
