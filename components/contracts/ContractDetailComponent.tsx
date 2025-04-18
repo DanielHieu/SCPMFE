@@ -5,6 +5,7 @@ import { fetchApi } from "@/lib/api/api-helper";
 import { Contract, ContractStatus, PaymentContract } from "@/types";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
     const [contract, setContract] = useState<Contract | null>(null);
@@ -172,6 +173,17 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
 
     return (
         <div className="container mx-auto p-6">
+            <div className="space-y-6 w-full mb-6">
+                {/* Breadcrumb */}
+                <Breadcrumb
+                    items={[
+                        { label: "Trang chủ", href: "/dashboard" },
+                        { label: "Quản lý hợp đồng", href: "/contracts" },
+                        { label: `Hợp đồng #${contractId}` }
+                    ]}
+                />
+            </div>
+            
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Hợp đồng</h1>
                 <p className="text-gray-500">Mã hợp đồng: {contract.contractId}</p>

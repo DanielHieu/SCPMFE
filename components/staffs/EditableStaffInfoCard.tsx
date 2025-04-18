@@ -29,12 +29,10 @@ type UpdateStaffFormData = z.infer<typeof updateStaffSchema>;
 
 interface EditableStaffInfoCardProps {
   initialData: Staff;
-  ownerId: number; // Needed for update payload
 }
 
 export function EditableStaffInfoCard({
-  initialData,
-  ownerId,
+  initialData
 }: EditableStaffInfoCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -71,7 +69,6 @@ export function EditableStaffInfoCard({
     try {
       const payload: UpdateStaffPayload = {
         staffAccountId: initialData.staffId,
-        ownerId: ownerId,
         firstName: data.firstName,
         lastName: data.lastName,
         phone: data.phone,
@@ -80,10 +77,14 @@ export function EditableStaffInfoCard({
       };
       
       await updateStaff(payload);
+
       toast.success("Staff details updated");
+
       setIsEditing(false);
+
     } catch (error) {
       toast.error(`Update failed: ${error}`);
+
     } finally {
       setIsSubmitting(false);
     }
@@ -91,7 +92,6 @@ export function EditableStaffInfoCard({
 
   // Base classes for inputs
   const inputBaseClasses = "border-0 bg-transparent shadow-none px-3 py-2 h-auto";
-  const readOnlyClasses = "read-only:cursor-default read-only:bg-transparent";
   const editableClasses = "focus:bg-muted/50 focus-visible:ring-1 focus-visible:ring-offset-0";
 
   if (!isEditing) {

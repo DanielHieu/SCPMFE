@@ -11,21 +11,3 @@ export interface Car {
   thumbnail: string;
   brand: string;
 }
-
-export interface AddVehiclePayload {
-  customerId: number;
-  brand: string;
-  thumbnail: string;
-  model: string;
-  color: string;
-  licensePlate: string;
-}
-
-export interface UpdateVehiclePayload {
-  carId: number;
-  brand: string;
-  thumbnail: string;
-  model: string;
-  color: string;
-  licensePlate: string;
-}

@@ -1,5 +1,5 @@
 import {
-  RegisterStaffPayload,
+  AddStaffPayload,
   SearchStaffPayload,
   Staff,
   UpdateStaffPayload,
@@ -11,7 +11,7 @@ export async function searchStaff(
   payload: SearchStaffPayload,
 ): Promise<Staff[]> {
   // Adjust return based on actual nested structure if any (e.g., response.data)
-  return await fetchApi(`/Staff/SearchStaff`, {
+  return await fetchApi(`/Staff/Search`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -23,12 +23,12 @@ export async function searchStaff(
 }
 
 // POST /api/proxy/Staff/Register
-export async function registerStaff(
-  payload: RegisterStaffPayload,
+export async function addStaff(
+  payload: AddStaffPayload,
 ): Promise<Staff> {
   // Assuming API returns the created staff member
   // Adjust return based on actual nested structure if any (e.g., response.data)
-  return await fetchApi(`/Staff/Register`, {
+  return await fetchApi(`/Staff/Add`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

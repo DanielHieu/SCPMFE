@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { searchStaff, registerStaff } from "@/lib/api";
-import { Staff, RegisterStaffPayload } from "@/types";
+import { searchStaff, addStaff, updateStaff } from "@/lib/api";
+import { Staff, AddStaffPayload, UpdateStaffPayload } from "@/types";
 import { StaffTable } from "@/components/staffs/StaffTable";
 import { StaffForm } from "@/components/staffs/StaffForm";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import useDebounce from "@/hooks/useDebounce";
-import { ListFilter, PlusCircle } from "lucide-react";
+import { ListFilter, PlusCircle, Search } from "lucide-react";
 import {
   Breadcrumb,
 } from "@/components/ui/breadcrumb";
@@ -28,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 type FilterStatus = "all" | "active" | "inactive";
 
@@ -38,6 +39,8 @@ export default function StaffPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -77,19 +80,54 @@ export default function StaffPage() {
 
   // Handler for submitting the Add Staff form
   const handleAddStaff = async (
-    formData: Omit<RegisterStaffPayload, "ownerId">,
+    formData: AddStaffPayload,
   ) => {
-    // Assuming ownerId comes from session or context
-    const ownerId = 1; // Replace with actual owner ID logic
     try {
-      await registerStaff({ ...formData, ownerId: ownerId });
+      await addStaff(formData);
+
       setIsAddModalOpen(false);
+
       refreshData();
-      alert("Thêm nhân viên thành công!");
+
+      toast.success("Thêm nhân viên thành công!");
     } catch (error) {
       console.error("Không thể thêm nhân viên:", error);
-      alert(
+      toast.error(
         `Lỗi khi thêm nhân viên: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
+      );
+    }
+  };
+
+  // Handler for editing staff
+  const handleEditClick = (staff: Staff) => {
+    setEditingStaff(staff);
+    setIsEditModalOpen(true);
+  };
+
+  // Handler for updating staff
+  const handleUpdateStaff = async (formData: Omit<UpdateStaffPayload, 'staffId'>) => {
+    if (!editingStaff) {
+      toast.error("Lỗi: Không tìm thấy nhân viên đang chỉnh sửa.");
+      return;
+    }
+
+    const payload: UpdateStaffPayload = {
+      ...formData,
+      staffId: editingStaff.staffId,
+    };
+
+    try {
+      await updateStaff(payload);
+
+      setIsEditModalOpen(false);
+      setEditingStaff(null);
+      refreshData();
+
+      toast.success("Cập nhật nhân viên thành công!");
+    } catch (error) {
+      console.error("Không thể cập nhật nhân viên:", error);
+      toast.error(
+        `Lỗi khi cập nhật nhân viên: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
       );
     }
   };
@@ -126,38 +164,14 @@ export default function StaffPage() {
 
       {/* Filters and Actions Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 px-1">
-        {/* Filter Tabs */}
-        {/* <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant={filterStatus === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterStatus("all")}
-          >
-            Tất cả nhân viên ({counts.all})
-          </Button>
-          <Button
-            variant={filterStatus === "active" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterStatus("active")}
-          >
-            Đang hoạt động ({counts.active})
-          </Button>
-          <Button
-            variant={filterStatus === "inactive" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterStatus("inactive")}
-          >
-            Không hoạt động ({counts.inactive})
-          </Button>
-        </div> */}
-
         {/* Search and Add */}
-        <div className="w-full md:w-auto md:flex-grow lg:max-w-md">
+        <div className="w-full md:w-auto md:flex-grow lg:max-w-md relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Tìm kiếm theo tên/số điện thoại..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-xs h-9"
+            className="max-w-xs h-9 pl-9"
           />
         </div>
 
@@ -219,9 +233,39 @@ export default function StaffPage() {
           <div className="p-6 text-center text-red-500">Lỗi: {error}</div>
         )}
         {!isLoading && !error && (
-          <StaffTable staff={filteredStaff} refreshDataAction={refreshData} />
+          <StaffTable
+            staff={filteredStaff}
+            refreshDataAction={refreshData}
+            onEditClick={handleEditClick}
+          />
         )}
       </div>
+
+      {/* Edit Staff Dialog */}
+      <Dialog
+        open={isEditModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditingStaff(null);
+          setIsEditModalOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa nhân viên</DialogTitle>
+          </DialogHeader>
+          {editingStaff && (
+            <StaffForm
+              onSubmitAction={handleUpdateStaff}
+              initialData={editingStaff}
+              onCancelAction={() => {
+                setIsEditModalOpen(false);
+                setEditingStaff(null);
+              }}
+              key={`edit-${editingStaff.staffId}`}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -16,8 +16,7 @@ export interface SearchStaffPayload {
 }
 
 // POST /api/Staff/Register
-export interface RegisterStaffPayload {
-  ownerId: number;
+export interface AddStaffPayload {
   firstName: string;
   lastName: string;
   phone: string;
@@ -29,8 +28,7 @@ export interface RegisterStaffPayload {
 
 // PUT /api/Staff/Update
 export interface UpdateStaffPayload {
-  staffAccountId: number;
-  ownerId: number;
+  staffId: number;
   firstName?: string | null;
   lastName?: string | null;
   phone?: string | null;

@@ -37,7 +37,6 @@ export default function StaffDetailPage() {
   // Hooks
   const params = useParams();
   const staffId = parseInt(params.staffId as string, 10);
-  const ownerId = 1; // TODO: Get from auth context
 
   // State
   const [staffData, setStaffData] = useState<Staff | null>(null);
@@ -83,7 +82,6 @@ export default function StaffDetailPage() {
     try {
       const payload: UpdateStaffPayload = {
         staffAccountId: staffId,
-        ownerId: ownerId,
         firstName: staffData.firstName,
         lastName: staffData.lastName,
         phone: staffData.phone,
@@ -238,7 +236,6 @@ export default function StaffDetailPage() {
               <CardContent className="p-0">
                 <EditableStaffInfoCard
                   initialData={staffData}
-                  ownerId={ownerId}
                 />
               </CardContent>
             </Card>

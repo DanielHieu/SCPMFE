@@ -501,7 +501,7 @@ export default function TasksPage() {
                                                 }}
                                                 className="text-blue-600 hover:text-blue-800"
                                             >
-                                                Chi tiết
+                                                Chỉnh sửa
                                             </Button>
                                         </td>
                                     </tr>

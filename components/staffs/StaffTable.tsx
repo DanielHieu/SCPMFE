@@ -1,6 +1,6 @@
 // components/features/staff/StaffTable.tsx
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Staff } from "@/types"; // Use your Staff type
 import { deleteStaff } from "@/lib/api";
 // ... imports for TanStack Table, UI Components (Table, Button, Badge, DropdownMenu), Icons ...
@@ -35,10 +35,11 @@ import Link from "next/link";
 interface StaffTableProps {
   staff: Staff[];
   refreshDataAction: () => void;
+  onEditClick?: (staff: Staff) => void;
 }
 
-export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+export function StaffTable({ staff, refreshDataAction, onEditClick }: StaffTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const handleDelete = async (staffAccountId: number) => {
     if (window.confirm("Bạn có chắc chắn? Hành động này sẽ xóa nhân viên.")) {
@@ -82,13 +83,12 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
         ),
       },
       {
-        // IMPORTANT: Check the exact boolean field name in your Staff type ('isActive' or 'isActived')
-        accessorKey: "isActived", // Or 'isActive'
+        accessorKey: "isActive",
         header: "Trạng thái",
         cell: ({ row }) => {
-          const isActive = row.getValue("isActived"); // Or 'isActive'
+          const isActive = row.getValue("isActive");
           return (
-            <Badge variant={isActive ? "default" : "outline"}>
+            <Badge variant={isActive ? "secondary" : "destructive"} className={isActive ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-800"}>
               {isActive ? "Đang hoạt động" : "Không hoạt động"}
             </Badge>
           );
@@ -97,37 +97,36 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
       {
         id: "actions",
         cell: ({ row }) => {
-          const staffMember = row.original;
-          // Assuming ID field is staffAccountId based on Update/Delete API [cite: 286, 183]
-          const staffId = staffMember.staffId;
+          const currentStaff = row.original;
+          const isActive = currentStaff.isActive;
 
           return (
             <div className="flex justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
+                  <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-full">
+                    <span className="sr-only">Mở menu</span>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {/* Add View Details link later if a details page is created */}
+                <DropdownMenuContent align="end" className="w-40 rounded-md shadow-md">
+                  {onEditClick && (
+                    <DropdownMenuItem 
+                      className="cursor-pointer hover:bg-slate-50" 
+                      onClick={() => onEditClick(currentStaff)}
+                    >
+                      <Edit className="mr-2 h-4 w-4 text-slate-500" />
+                      Chỉnh sửa
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href={`/staffs/${staffId}`}>
+                    <Link href={`/staffs/${currentStaff.staffId}`}>
                       <Eye className="mr-2 h-4 w-4" /> Xem chi tiết
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() =>
-                      alert(`Chỉnh sửa cho nhân viên ID: ${staffId}`)
-                    } // Placeholder for Edit modal
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Chỉnh sửa
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
                     className="cursor-pointer text-red-600"
-                    onClick={() => handleDelete(staffId)}
+                    onClick={() => handleDelete(currentStaff.staffId)}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Xoá
                   </DropdownMenuItem>
@@ -138,7 +137,7 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
         },
       },
     ],
-    [],
+    [onEditClick],
   );
 
   const table = useReactTable({
@@ -149,6 +148,11 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10, // Set a fixed number of items per page
+      },
+    },
   });
 
   return (
@@ -200,8 +204,8 @@ export function StaffTable({ staff, refreshDataAction }: StaffTableProps) {
       {/* Pagination Controls */}
       <div className="flex items-center justify-between space-x-2 p-4 border-t">
         <div className="text-sm text-muted-foreground">
-          Hiển thị {table.getRowModel().rows.length} trong số {staff.length} nhân viên
-          {/* Adjust if using server-side pagination */}
+          Hiển thị {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+          {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, staff.length)} trong số {staff.length} nhân viên
         </div>
         <div className="space-x-2">
           <Button

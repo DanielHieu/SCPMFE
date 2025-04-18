@@ -32,7 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-//import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/components/ui/separator";
 
 export default function CustomerDetailPage() {
   // Hooks
@@ -363,7 +363,7 @@ export default function CustomerDetailPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">Thông tin khách hàng</h3>
-          
+                    <Separator className="my-2" />
                     <dl className="grid grid-cols-1 gap-3 text-sm">
                       <div className="flex justify-between">
                         <dt className="text-gray-500">ID khách hàng:</dt>
@@ -374,7 +374,7 @@ export default function CustomerDetailPage() {
 
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">Thống kê</h3>
-            
+                    <Separator className="my-2" />
                     <div className="grid grid-cols-2 gap-4 mt-3">
                       <div className="bg-blue-50 rounded-lg p-3 text-center">
                         <p className="text-xs text-blue-600 font-medium">Phương tiện</p>
