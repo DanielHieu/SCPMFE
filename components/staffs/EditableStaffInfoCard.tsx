@@ -68,7 +68,7 @@ export function EditableStaffInfoCard({
     setIsSubmitting(true);
     try {
       const payload: UpdateStaffPayload = {
-        staffAccountId: initialData.staffId,
+        staffId: initialData.staffId,
         firstName: data.firstName,
         lastName: data.lastName,
         phone: data.phone,
