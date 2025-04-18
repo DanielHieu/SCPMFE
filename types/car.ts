@@ -11,6 +11,3 @@ export interface Car {
   thumbnail: string;
   brand: string;
 }
-
-
-

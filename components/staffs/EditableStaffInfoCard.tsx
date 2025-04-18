@@ -75,7 +75,7 @@ export function EditableStaffInfoCard({
         email: data.email,
         isActive: initialData.isActive
       };
-      
+
       await updateStaff(payload);
 
       toast.success("Staff details updated");
@@ -99,28 +99,28 @@ export function EditableStaffInfoCard({
       <div className="p-4 divide-y">
         <div className="py-3 flex items-start justify-between">
           <div className="space-y-4">
-            <InfoItem 
+            <InfoItem
               icon={<User className="h-4 w-4 text-muted-foreground" />}
               label="Họ và tên"
               value={`${initialData.firstName} ${initialData.lastName}`}
             />
-            
-            <InfoItem 
+
+            <InfoItem
               icon={<Mail className="h-4 w-4 text-muted-foreground" />}
               label="Email"
               value={initialData.email}
             />
-            
-            <InfoItem 
+
+            <InfoItem
               icon={<Phone className="h-4 w-4 text-muted-foreground" />}
               label="Số điện thoại"
               value={initialData.phone}
             />
           </div>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
+
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-primary hover:text-primary/80"
             onClick={() => setIsEditing(true)}
           >
@@ -151,7 +151,7 @@ export function EditableStaffInfoCard({
               <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>
             )}
           </div>
-          
+
           {/* Last Name */}
           <div className="space-y-1">
             <Label htmlFor="staff-lastName" className="text-xs font-medium text-muted-foreground">
@@ -168,7 +168,7 @@ export function EditableStaffInfoCard({
             )}
           </div>
         </div>
-        
+
         {/* Email */}
         <div className="space-y-1">
           <Label htmlFor="staff-email" className="text-xs font-medium text-muted-foreground">
@@ -185,7 +185,7 @@ export function EditableStaffInfoCard({
             <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
           )}
         </div>
-        
+
         {/* Phone */}
         <div className="space-y-1">
           <Label htmlFor="staff-phone" className="text-xs font-medium text-muted-foreground">
@@ -203,7 +203,7 @@ export function EditableStaffInfoCard({
           )}
         </div>
       </div>
-      
+
       {/* Buttons */}
       <div className="flex items-center justify-end space-x-2 mt-6">
         <Button
@@ -218,8 +218,8 @@ export function EditableStaffInfoCard({
         >
           Hủy
         </Button>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           size="sm"
           disabled={isSubmitting || !isDirty}
         >
