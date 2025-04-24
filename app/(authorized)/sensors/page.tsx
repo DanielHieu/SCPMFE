@@ -56,13 +56,14 @@ import { getParkingStatusSensors } from "@/lib/api/parking-space.api";
 import { ParkingStatusSensor } from "@/types/parkingStatusSensor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { fetchApi } from "@/lib/api/api-helper";
+import { Area, Floor, ParkingLot, ParkingSpace } from "@/types";
 
 // Mở rộng kiểu dữ liệu cho nhu cầu giao diện
 type SensorWithUI = ParkingStatusSensor & {
     showApiKey?: boolean;
     lastMaintenance?: string;
     batteryLevel?: number;
-    location?: string;
 };
 
 type FilterStatus = "all" | "active" | "inactive" | "maintenance";
@@ -84,13 +85,13 @@ export default function SensorsPage() {
         inactive: 0,
         maintenance: 0,
     });
-    const [parkingSpaceOptions, setParkingSpaceOptions] = useState<Array<{ id: number, name: string }>>([]);
+    const [parkingSpaceOptions, setParkingSpaceOptions] = useState<Array<ParkingSpace>>([]);
 
     // Trạng thái cho lựa chọn phân cấp
-    const [parkingLots, setParkingLots] = useState<Array<{ id: number, name: string }>>([]);
-    const [areas, setAreas] = useState<Array<{ id: number, name: string, lotId: number }>>([]);
-    const [floors, setFloors] = useState<Array<{ id: number, name: string, areaId: number }>>([]);
-    const [parkingSpaces, setParkingSpaces] = useState<Array<{ id: number, name: string, floorId: number }>>([]);
+    const [parkingLots, setParkingLots] = useState<Array<ParkingLot>>([]);
+    const [areas, setAreas] = useState<Array<Area>>([]);
+    const [floors, setFloors] = useState<Array<Floor>>([]);
+    const [parkingSpaces, setParkingSpaces] = useState<Array<ParkingSpace>>([]);
 
     // Giá trị đã chọn cho lựa chọn phân cấp
     const [selectedLot, setSelectedLot] = useState<number | null>(null);
@@ -113,6 +114,7 @@ export default function SensorsPage() {
         for (let i = 0; i < length; i++) {
             result += characters.charAt(Math.floor(Math.random() * charactersLength));
         }
+
         return result;
     };
 
@@ -141,6 +143,11 @@ export default function SensorsPage() {
         try {
             const data = await getParkingStatusSensors();
 
+            // Kiểm tra xem data có phải là mảng không
+            if (!Array.isArray(data)) {
+                throw new Error("Dữ liệu không hợp lệ từ API");
+            }
+
             // Ánh xạ dữ liệu API sang dữ liệu giao diện
             const mappedSensors = data.map(sensor => ({
                 ...sensor,
@@ -155,9 +162,9 @@ export default function SensorsPage() {
 
             // Cập nhật số lượng
             const allCount = mappedSensors.length;
-            const activeCount = mappedSensors.filter(s => s.status.toLowerCase() === "active").length;
-            const inactiveCount = mappedSensors.filter(s => s.status.toLowerCase() === "inactive").length;
-            const maintenanceCount = mappedSensors.filter(s => s.status.toLowerCase() === "maintenance").length;
+            const activeCount = mappedSensors.filter(s => s.status?.toLowerCase() === "active").length;
+            const inactiveCount = mappedSensors.filter(s => s.status?.toLowerCase() === "inactive").length;
+            const maintenanceCount = mappedSensors.filter(s => s.status?.toLowerCase() === "maintenance").length;
 
             setCounts({
                 all: allCount,
@@ -169,6 +176,14 @@ export default function SensorsPage() {
         } catch (err) {
             setError(err instanceof Error ? err.message : "Đã xảy ra lỗi không xác định");
             toast.error("Không thể tải dữ liệu cảm biến");
+            // Đặt sensors thành mảng rỗng khi có lỗi
+            setSensors([]);
+            setCounts({
+                all: 0,
+                active: 0,
+                inactive: 0,
+                maintenance: 0,
+            });
         } finally {
             setIsLoading(false);
         }
@@ -204,25 +219,37 @@ export default function SensorsPage() {
     const handleAddSensor = async (sensorData: Partial<SensorWithUI>) => {
         try {
             // Trong triển khai thực tế, bạn sẽ gọi API để tạo cảm biến
-            toast.success("Chức năng chưa được triển khai trong bản demo này");
+            // Chuẩn bị dữ liệu để gửi đến API
+            const payload = {
+                apiKey: sensorData.apiKey,
+                parkingSpaceId: sensorData.parkingSpaceId, // Sử dụng ID của tầng đã chọn
+                status: "active" // Mặc định trạng thái là active khi tạo mới
+            };
+
+            // Gọi API để thêm cảm biến
+            const response = await fetchApi('/sensor/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Không thể thêm cảm biến");
+            }
+
+            toast.success("Thêm cảm biến thành công");
+
+            // Cập nhật danh sách cảm biến
+            fetchSensors();
             setIsAddModalOpen(false);
             setNewSensor({}); // Đặt lại biểu mẫu
             // Đặt lại lựa chọn phân cấp
             setSelectedLot(null);
             setSelectedArea(null);
             setSelectedFloor(null);
-        } catch (err) {
-            toast.error("Lỗi: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
-        }
-    };
-
-    // Xử lý cập nhật cảm biến
-    const handleUpdateSensor = async (sensorData: SensorWithUI) => {
-        try {
-            // Trong triển khai thực tế, bạn sẽ gọi API để cập nhật cảm biến
-            toast.success("Chức năng chưa được triển khai trong bản demo này");
-            setIsEditModalOpen(false);
-            setEditingSensor(null);
         } catch (err) {
             toast.error("Lỗi: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
         }
@@ -276,13 +303,9 @@ export default function SensorsPage() {
     // Lấy danh sách bãi đỗ xe
     const fetchParkingLots = async () => {
         try {
-            // Hiện tại chúng ta sử dụng dữ liệu giả, nhưng trong ứng dụng thực tế, bạn sẽ lấy từ API
-            const mockParkingLots = [
-                { id: 1, name: "Bãi đỗ xe A - Quận 1" },
-                { id: 2, name: "Bãi đỗ xe B - Quận 2" },
-                { id: 3, name: "Bãi đỗ xe C - Quận 3" },
-            ];
-            setParkingLots(mockParkingLots);
+            // Gọi API để lấy danh sách bãi đỗ xe
+            const response = await fetchApi('/parkinglot/getAll');
+            setParkingLots(response);
         } catch (err) {
             console.error("Không thể tải dữ liệu bãi đỗ xe:", err);
             toast.error("Không thể tải dữ liệu bãi đỗ xe");
@@ -292,16 +315,9 @@ export default function SensorsPage() {
     // Lấy danh sách khu vực dựa trên bãi đỗ xe đã chọn
     const fetchAreas = async (lotId: number) => {
         try {
-            // Dữ liệu giả cho khu vực
-            const mockAreas = [
-                { id: 1, name: "Khu vực A", lotId: 1 },
-                { id: 2, name: "Khu vực B", lotId: 1 },
-                { id: 3, name: "Khu vực C", lotId: 2 },
-                { id: 4, name: "Khu vực D", lotId: 2 },
-                { id: 5, name: "Khu vực E", lotId: 3 },
-            ];
-            const filteredAreas = mockAreas.filter(area => area.lotId === lotId);
-            setAreas(filteredAreas);
+            // Gọi API để lấy danh sách khu vực
+            const response = await fetchApi(`/area/getAreasByParkingLot/?parkingLotId=${lotId}`);
+            setAreas(response);
             setSelectedArea(null); // Đặt lại khu vực đã chọn khi bãi đỗ xe thay đổi
             setSelectedFloor(null); // Đặt lại tầng đã chọn
         } catch (err) {
@@ -313,18 +329,9 @@ export default function SensorsPage() {
     // Lấy danh sách tầng dựa trên khu vực đã chọn
     const fetchFloors = async (areaId: number) => {
         try {
-            // Dữ liệu giả cho tầng
-            const mockFloors = [
-                { id: 1, name: "Tầng 1", areaId: 1 },
-                { id: 2, name: "Tầng 2", areaId: 1 },
-                { id: 3, name: "Tầng 1", areaId: 2 },
-                { id: 4, name: "Tầng 1", areaId: 3 },
-                { id: 5, name: "Tầng 2", areaId: 3 },
-                { id: 6, name: "Tầng 1", areaId: 4 },
-                { id: 7, name: "Tầng 1", areaId: 5 },
-            ];
-            const filteredFloors = mockFloors.filter(floor => floor.areaId === areaId);
-            setFloors(filteredFloors);
+            // Gọi API để lấy danh sách tầng
+            const response = await fetchApi(`/floor/GetFloorsByArea/?areaId=${areaId}`);
+            setFloors(response);
             setSelectedFloor(null); // Đặt lại tầng đã chọn khi khu vực thay đổi
         } catch (err) {
             console.error("Không thể tải dữ liệu tầng:", err);
@@ -335,40 +342,9 @@ export default function SensorsPage() {
     // Lấy danh sách vị trí đỗ xe dựa trên tầng đã chọn
     const fetchParkingSpaces = async (floorId: number) => {
         try {
-            // Dữ liệu giả cho vị trí đỗ xe
-            const mockParkingSpaces = [
-                { id: 1, name: "A1", floorId: 1 },
-                { id: 2, name: "A2", floorId: 1 },
-                { id: 3, name: "A3", floorId: 1 },
-                { id: 4, name: "B1", floorId: 2 },
-                { id: 5, name: "B2", floorId: 2 },
-                { id: 6, name: "C1", floorId: 3 },
-                { id: 7, name: "D1", floorId: 4 },
-                { id: 8, name: "D2", floorId: 4 },
-                { id: 9, name: "E1", floorId: 5 },
-                { id: 10, name: "F1", floorId: 6 },
-                { id: 11, name: "G1", floorId: 7 },
-            ];
-            const filteredSpaces = mockParkingSpaces.filter(space => space.floorId === floorId);
-            setParkingSpaces(filteredSpaces);
-        } catch (err) {
-            console.error("Không thể tải dữ liệu vị trí đỗ xe:", err);
-            toast.error("Không thể tải dữ liệu vị trí đỗ xe");
-        }
-    };
-
-    // Thêm hàm để lấy danh sách vị trí đỗ xe (phương thức cũ)
-    const fetchParkingSpaceOptions = async () => {
-        try {
-            // Hiện tại chúng ta sử dụng dữ liệu giả, nhưng trong ứng dụng thực tế, bạn sẽ lấy từ API
-            const mockParkingSpaces = [
-                { id: 1, name: "A1 - Tầng 1 - Khu A" },
-                { id: 2, name: "A2 - Tầng 1 - Khu A" },
-                { id: 3, name: "B1 - Tầng 2 - Khu B" },
-                { id: 4, name: "B2 - Tầng 2 - Khu B" },
-                { id: 5, name: "C1 - Tầng 1 - Khu C" },
-            ];
-            setParkingSpaceOptions(mockParkingSpaces);
+            // Gọi API để lấy danh sách vị trí đỗ xe
+            const response = await fetchApi(`/parkingspace/getParkingSpacesByFloor/?floorId=${floorId}`);
+            setParkingSpaces(response);
         } catch (err) {
             console.error("Không thể tải dữ liệu vị trí đỗ xe:", err);
             toast.error("Không thể tải dữ liệu vị trí đỗ xe");
@@ -400,9 +376,8 @@ export default function SensorsPage() {
     useEffect(() => {
         if (isAddModalOpen) {
             fetchParkingLots();
-            fetchParkingSpaceOptions(); // Phương thức cũ
         } else if (isEditModalOpen) {
-            fetchParkingSpaceOptions(); // Phương thức cũ cho modal sửa
+            fetchParkingLots();
         }
     }, [isAddModalOpen, isEditModalOpen]);
 
@@ -530,7 +505,6 @@ export default function SensorsPage() {
                                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Vị trí</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Trạng thái</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">API Key</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Vị trí đỗ xe</th>
                                     <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">Hành động</th>
                                 </tr>
                             </thead>
@@ -542,7 +516,7 @@ export default function SensorsPage() {
                                         <tr key={sensor.parkingStatusSensorId} className="border-b hover:bg-muted/50">
                                             <td className="px-4 py-3 text-sm font-medium">{sensor.parkingStatusSensorId}</td>
                                             <td className="px-4 py-3 text-sm">{sensor.name}</td>
-                                            <td className="px-4 py-3 text-sm">{sensor.location || "Không có thông tin"}</td>
+                                            <td className="px-4 py-3 text-sm">{sensor.parkingSpaceName}</td>
                                             <td className="px-4 py-3">
                                                 <Badge
                                                     variant={statusDisplay.variant as any}
@@ -599,7 +573,6 @@ export default function SensorsPage() {
                                                     </TooltipProvider>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-sm">{sensor.parkingSpaceName}</td>
                                             <td className="px-4 py-3">
                                                 <div className="flex justify-center gap-1">
                                                     <TooltipProvider>
@@ -622,7 +595,6 @@ export default function SensorsPage() {
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
-
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
@@ -659,226 +631,218 @@ export default function SensorsPage() {
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Thêm cảm biến mới</DialogTitle>
+                        <DialogTitle className="text-xl font-semibold">Thêm cảm biến mới</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 py-2">
+                    <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-2">
                         <div className="space-y-2">
-                            <Label htmlFor="sensorName">Tên cảm biến</Label>
+                            <Label htmlFor="sensorName" className="font-medium">Tên cảm biến</Label>
                             <Input
                                 id="sensorName"
                                 placeholder="Nhập tên cảm biến"
                                 value={newSensor.name || ""}
                                 onChange={(e) => setNewSensor({ ...newSensor, name: e.target.value })}
+                                className="focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="parkingSpace">Vị trí đỗ xe</Label>
-                            <Select
-                                value={newSensor.parkingSpaceId?.toString() || ""}
-                                onValueChange={(value) => {
-                                    const selectedSpace = parkingSpaceOptions.find(
-                                        space => space.id === parseInt(value)
-                                    );
-                                    const spaceName = selectedSpace?.name || "";
-                                    setNewSensor({
-                                        ...newSensor,
-                                        parkingSpaceId: parseInt(value),
-                                        parkingSpaceName: spaceName,
-                                        // Set a default name based on the parking space if not set already
-                                        name: newSensor.name || `Cảm biến ${spaceName}`,
-                                        // Set a default location based on the parking space
-                                        location: newSensor.location || `Bãi đỗ xe - Vị trí ${spaceName}`
-                                    });
-                                }}
-                            >
-                                <SelectTrigger id="parkingSpace">
-                                    <SelectValue placeholder="Chọn vị trí đỗ xe" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectLabel>Vị trí đỗ xe</SelectLabel>
-                                        {parkingSpaceOptions.map(space => (
-                                            <SelectItem
-                                                key={space.id}
-                                                value={space.id.toString()}
-                                            >
-                                                {space.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="location">Vị trí cảm biến</Label>
-                            <Input
-                                id="location"
-                                placeholder="Vị trí lắp đặt cảm biến"
-                                value={newSensor.location || ""}
-                                onChange={(e) => setNewSensor({ ...newSensor, location: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="status">Trạng thái</Label>
-                            <Select
-                                value={newSensor.status || "active"}
-                                onValueChange={(value) => setNewSensor({ ...newSensor, status: value })}
-                            >
-                                <SelectTrigger id="status">
-                                    <SelectValue placeholder="Chọn trạng thái" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="active">Hoạt động</SelectItem>
-                                    <SelectItem value="inactive">Không hoạt động</SelectItem>
-                                    <SelectItem value="maintenance">Đang bảo trì</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="apiKey">API Key</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    id="apiKey"
-                                    placeholder="API Key sẽ được tạo tự động"
-                                    readOnly
-                                    value={newSensor.apiKey || ""}
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setNewSensor({ ...newSensor, apiKey: generateApiKey() })}
-                                >
-                                    Tạo
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="flex justify-end space-x-2 pt-4">
-                            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                                Hủy
-                            </Button>
-                            <Button
-                                onClick={() => handleAddSensor(newSensor)}
-                                disabled={!newSensor.parkingSpaceId || !newSensor.status}
-                            >
-                                Thêm cảm biến
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
 
-            {/* Edit Sensor Modal */}
-            <Dialog open={isEditModalOpen} onOpenChange={(open) => {
-                setIsEditModalOpen(open);
-                if (!open) setEditingSensor(null);
-            }}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Chỉnh sửa cảm biến</DialogTitle>
-                    </DialogHeader>
-                    {editingSensor && (
-                        <div className="space-y-4 py-2">
+                        {/* Lựa chọn bãi đỗ xe và khu vực */}
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-sensorName">Tên cảm biến</Label>
-                                <Input
-                                    id="edit-sensorName"
-                                    placeholder="Nhập tên cảm biến"
-                                    value={editingSensor.name || ""}
-                                    onChange={(e) => setEditingSensor({ ...editingSensor, name: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-parkingSpace">Vị trí đỗ xe</Label>
+                                <Label htmlFor="parkingLot" className="font-medium">Bãi đỗ xe</Label>
                                 <Select
-                                    value={editingSensor.parkingSpaceId?.toString() || ""}
-                                    onValueChange={(value) => {
-                                        const selectedSpace = parkingSpaceOptions.find(
-                                            space => space.id === parseInt(value)
-                                        );
-                                        setEditingSensor({
-                                            ...editingSensor,
-                                            parkingSpaceId: parseInt(value),
-                                            parkingSpaceName: selectedSpace?.name || ""
-                                        });
-                                    }}
+                                    value={selectedLot?.toString() || ""}
+                                    onValueChange={(value) => setSelectedLot(parseInt(value))}
                                 >
-                                    <SelectTrigger id="edit-parkingSpace">
-                                        <SelectValue placeholder="Chọn vị trí đỗ xe" />
+                                    <SelectTrigger id="parkingLot" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                        <SelectValue placeholder="Chọn bãi đỗ xe" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            <SelectLabel>Vị trí đỗ xe</SelectLabel>
-                                            {parkingSpaceOptions.map(space => (
+                                            <SelectLabel className="font-semibold text-gray-700">Bãi đỗ xe</SelectLabel>
+                                            {parkingLots.map(lot => (
                                                 <SelectItem
-                                                    key={space.id}
-                                                    value={space.id.toString()}
+                                                    key={lot.parkingLotId}
+                                                    value={lot.parkingLotId?.toString()}
+                                                    className="cursor-pointer hover:bg-gray-100"
                                                 >
-                                                    {space.name}
+                                                    {lot.address}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </div>
+
                             <div className="space-y-2">
-                                <Label htmlFor="edit-location">Vị trí cảm biến</Label>
-                                <Input
-                                    id="edit-location"
-                                    placeholder="Vị trí lắp đặt cảm biến"
-                                    value={editingSensor.location || ""}
-                                    onChange={(e) => setEditingSensor({ ...editingSensor, location: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-status">Trạng thái</Label>
+                                <Label htmlFor="area" className="font-medium">Khu vực</Label>
                                 <Select
-                                    value={editingSensor.status || "active"}
-                                    onValueChange={(value) => setEditingSensor({ ...editingSensor, status: value })}
+                                    value={selectedArea?.toString() || ""}
+                                    onValueChange={(value) => setSelectedArea(parseInt(value))}
+                                    disabled={!selectedLot || areas.length === 0}
                                 >
-                                    <SelectTrigger id="edit-status">
-                                        <SelectValue placeholder="Chọn trạng thái" />
+                                    <SelectTrigger id="area" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                        <SelectValue placeholder="Chọn khu vực" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="active">Hoạt động</SelectItem>
-                                        <SelectItem value="inactive">Không hoạt động</SelectItem>
-                                        <SelectItem value="maintenance">Đang bảo trì</SelectItem>
+                                        <SelectGroup>
+                                            <SelectLabel className="font-semibold text-gray-700">Khu vực</SelectLabel>
+                                            {areas.map(area => (
+                                                <SelectItem
+                                                    key={area.areaId}
+                                                    value={area.areaId?.toString()}
+                                                    className="cursor-pointer hover:bg-gray-100"
+                                                >
+                                                    {area.areaName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-apiKey">API Key</Label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        id="edit-apiKey"
-                                        placeholder="API Key"
-                                        value={editingSensor.apiKey || ""}
-                                        readOnly
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setEditingSensor({ ...editingSensor, apiKey: generateApiKey() })}
-                                    >
-                                        Tạo mới
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="flex justify-end space-x-2 pt-4">
-                                <Button variant="outline" onClick={() => {
-                                    setIsEditModalOpen(false);
-                                    setEditingSensor(null);
-                                }}>
-                                    Hủy
-                                </Button>
-                                <Button
-                                    onClick={() => handleUpdateSensor(editingSensor)}
-                                    disabled={!editingSensor.parkingSpaceId || !editingSensor.status}
-                                >
-                                    Lưu thay đổi
-                                </Button>
+                                {!selectedLot && <p className="text-xs text-gray-500 italic mt-1">Vui lòng chọn bãi đỗ xe trước</p>}
                             </div>
                         </div>
-                    )}
+
+                        {/* Lựa chọn tầng và vị trí đỗ xe */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="floor" className="font-medium">Tầng</Label>
+                                <Select
+                                    value={selectedFloor?.toString() || ""}
+                                    onValueChange={(value) => setSelectedFloor(parseInt(value))}
+                                    disabled={!selectedArea || floors.length === 0}
+                                >
+                                    <SelectTrigger id="floor" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                        <SelectValue placeholder="Chọn tầng" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel className="font-semibold text-gray-700">Tầng</SelectLabel>
+                                            {floors.map(floor => (
+                                                <SelectItem
+                                                    key={floor.floorId}
+                                                    value={floor.floorId?.toString()}
+                                                    className="cursor-pointer hover:bg-gray-100"
+                                                >
+                                                    {floor.floorName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                                {!selectedArea && <p className="text-xs text-gray-500 italic mt-1">Vui lòng chọn khu vực trước</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="parkingSpace" className="font-medium">Vị trí đỗ xe</Label>
+                                <Select
+                                    value={newSensor.parkingSpaceId?.toString() || ""}
+                                    onValueChange={(value) => {
+                                        const selectedSpace = parkingSpaces.find(
+                                            space => space.parkingSpaceId === parseInt(value)
+                                        );
+                                        const spaceName = selectedSpace?.parkingSpaceName || "";
+                                        setNewSensor({
+                                            ...newSensor,
+                                            parkingSpaceId: parseInt(value),
+                                            parkingSpaceName: spaceName,
+                                            // Set a default name based on the parking space if not set already
+                                            name: newSensor.name || `Cảm biến ${spaceName}`,
+                                            // Set a default location based on the parking space
+                                        });
+                                    }}
+                                    disabled={!selectedFloor || parkingSpaces.length === 0}
+                                >
+                                    <SelectTrigger id="parkingSpace" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                        <SelectValue placeholder="Chọn vị trí đỗ xe" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel className="font-semibold text-gray-700">Vị trí đỗ xe</SelectLabel>
+                                            {parkingSpaces.map(space => (
+                                                <SelectItem
+                                                    key={space.parkingSpaceId}
+                                                    value={space.parkingSpaceId?.toString()}
+                                                    className="cursor-pointer hover:bg-gray-100"
+                                                >
+                                                    {space.parkingSpaceName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                                {!selectedFloor && <p className="text-xs text-gray-500 italic mt-1">Vui lòng chọn tầng trước</p>}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="status" className="font-medium">Trạng thái</Label>
+                            <Select
+                                value={newSensor.status || "active"}
+                                onValueChange={(value) => setNewSensor({ ...newSensor, status: value })}
+                            >
+                                <SelectTrigger id="status" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                    <SelectValue placeholder="Chọn trạng thái" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="active" className="cursor-pointer hover:bg-gray-100">
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                            Hoạt động
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="inactive" className="cursor-pointer hover:bg-gray-100">
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
+                                            Không hoạt động
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="maintenance" className="cursor-pointer hover:bg-gray-100">
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
+                                            Đang bảo trì
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="apiKey" className="font-medium">API Key</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="apiKey"
+                                    placeholder="API Key sẽ được tạo tự động"
+                                    readOnly
+                                    value={newSensor.apiKey || ""}
+                                    className="focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 bg-gray-50"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setNewSensor({ ...newSensor, apiKey: generateApiKey() })}
+                                    className="hover:bg-gray-100 transition-colors"
+                                >
+                                    Tạo
+                                </Button>
+                            </div>
+                            <p className="text-xs text-gray-500 italic mt-1">API Key dùng để xác thực cảm biến khi gửi dữ liệu</p>
+                        </div>
+                        <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 mt-4">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsAddModalOpen(false)}
+                                className="hover:bg-gray-100 transition-colors"
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                onClick={() => handleAddSensor(newSensor)}
+                                disabled={!newSensor.parkingSpaceId || !newSensor.status}
+                                className="bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                            >
+                                Thêm cảm biến
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>
