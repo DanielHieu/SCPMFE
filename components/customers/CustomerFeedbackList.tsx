@@ -26,7 +26,7 @@ export function CustomerFeedbackList({ feedback }: CustomerFeedbackListProps) {
           <ul className="space-y-4">
             {feedback.map((item) => (
               <li
-                key={item.feedbackId}
+                key={item.id}
                 className="p-3 border rounded-md bg-gray-50/50"
               >
                 <div className="flex justify-between items-start mb-1">
