@@ -66,11 +66,9 @@ const fetchFeedbacks = async (
 ): Promise<{ data: Feedback[], total: number }> => {
     try {
         const response = await fetchApi(`/Feedback/Search?pageIndex=${page}&pageSize=${limit}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch feedbacks');
-        }
-        const data = await response.json();
-        return data;
+
+        return response;
+
     } catch (error) {
         console.error('Error fetching feedbacks:', error);
         throw error;
