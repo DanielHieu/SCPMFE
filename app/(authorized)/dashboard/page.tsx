@@ -34,7 +34,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => router.refresh()}>
                         <Clock className="mr-2 h-4 w-4" />
-                        Refresh
+                        Làm mới
                     </Button>
                 </div>
             </div>
