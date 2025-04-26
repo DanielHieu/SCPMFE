@@ -34,7 +34,7 @@ import {
     Breadcrumb,
 } from "@/components/ui/breadcrumb";
 import useDebounce from "@/hooks/useDebounce";
-import { fetchApi } from "../../../lib/api/api-helper";
+import { fetchApi } from "@/lib/api/api-helper";
 
 // Define Feedback type
 type Feedback = {
@@ -59,16 +59,12 @@ type FilterStatus = "all" | "new" | "read" | "responded";
 
 // Mock API function to fetch feedbacks
 const fetchFeedbacks = async (
-    searchTerm: string,
     page: number = 1,
     limit: number = 10,
-    status?: string
-): Promise<{ data: Feedback[], total: number }> => {
+): Promise<{ items: Feedback[], totalCount: number }> => {
     try {
         const response = await fetchApi(`/Feedback/Search?pageIndex=${page}&pageSize=${limit}`);
-
         return response;
-
     } catch (error) {
         console.error('Error fetching feedbacks:', error);
         throw error;
@@ -100,14 +96,14 @@ const FeedbackPage = () => {
         try {
             // In a real app, you might have a separate API endpoint for counts
             // For demo, we'll fetch all items and count them
-            const allFeedbacks = await fetchFeedbacks("", 1, 1000);
-            
-            const newCount = allFeedbacks.data.filter(f => f.status === "new").length;
-            const readCount = allFeedbacks.data.filter(f => f.status === "read").length;
-            const respondedCount = allFeedbacks.data.filter(f => f.status === "responded").length;
-            
+            const allFeedbacks = await fetchFeedbacks(1, 20);
+
+            const newCount = allFeedbacks.items.filter(f => f.status === "new").length;
+            const readCount = allFeedbacks.items.filter(f => f.status === "read").length;
+            const respondedCount = allFeedbacks.items.filter(f => f.status === "responded").length;
+
             setCounts({
-                all: allFeedbacks.total,
+                all: allFeedbacks.totalCount,
                 new: newCount,
                 read: readCount,
                 responded: respondedCount
@@ -121,11 +117,9 @@ const FeedbackPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const status = filterStatus !== "all" ? filterStatus : undefined;
-            const result = await fetchFeedbacks(debouncedSearchTerm, currentPage, itemsPerPage, status);
-            setFeedbacks(result.data);
-            setTotalItems(result.total);
-            
+            const result = await fetchFeedbacks(currentPage, itemsPerPage);
+            setFeedbacks(result.items);
+            setTotalItems(result.totalCount);
             // Update counts whenever we load feedbacks
             await updateCounts();
         } catch (err) {
