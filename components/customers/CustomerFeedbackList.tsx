@@ -32,11 +32,11 @@ export function CustomerFeedbackList({ feedback }: CustomerFeedbackListProps) {
                 <div className="flex justify-between items-start mb-1">
                   {/* Use rating field */}
                   <span className="text-xs text-gray-500">
-                    {new Date(item.daySubmitted).toLocaleDateString()}{" "}
+                    {new Date(item.createdAt).toLocaleDateString()}{" "}
                     {/* Use date field */}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700">{item.message}</p>{" "}
+                <p className="text-sm text-gray-700">{item.content}</p>{" "}
                 {/* Use message/comment field */}
               </li>
             ))}
