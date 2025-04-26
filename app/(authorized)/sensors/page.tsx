@@ -227,18 +227,13 @@ export default function SensorsPage() {
             };
 
             // Gọi API để thêm cảm biến
-            const response = await fetchApi('/sensor/add', {
+            await fetchApi('/sensor/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Không thể thêm cảm biến");
-            }
 
             toast.success("Thêm cảm biến thành công");
 

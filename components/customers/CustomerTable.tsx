@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { Eye, MoreHorizontal } from "lucide-react";
+import { Eye, MoreHorizontal, CheckCircle, XCircle, Edit } from "lucide-react";
 import Link from "next/link";
 import {
   Table,
@@ -33,7 +33,8 @@ import {
 
 interface CustomerTableProps {
   customers: Customer[];
-  onEditClick: (customer: Customer) => void;
+  onApproveClick: (customer: Customer) => void;
+  onDisableClick: (customer: Customer) => void;
   onRefresh: () => void;
   isLoading?: boolean;
   error?: string | null;
@@ -43,7 +44,8 @@ export function CustomerTable({
   customers,
   isLoading,
   error,
-  onEditClick,
+  onApproveClick,
+  onDisableClick,
   onRefresh,
 }: CustomerTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -93,16 +95,41 @@ export function CustomerTable({
           const customer = row.original;
           return (
             <div className="flex justify-end">
-              <Link href={`/customers/${customer.customerId}`} className="flex items-center">
-                <Eye className="mr-2 h-4 w-4 text-slate-500" />
-                Xem chi tiết
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Mở menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {
+                    !customer.isActive && <DropdownMenuItem onClick={() => onApproveClick(customer)}>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Phê duyệt
+                    </DropdownMenuItem>
+                  }
+                  {
+                    customer.isActive && <DropdownMenuItem onClick={() => onDisableClick(customer)}>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Vô hiệu hóa
+                    </DropdownMenuItem>
+                  }
+                  <DropdownMenuItem>
+                    <Link href={`/customers/${customer.customerId}`} className="flex items-center ml-2">
+                      <Eye className="mr-2 h-4 w-4 text-slate-500" />
+                      Xem chi tiết
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
             </div>
           );
         },
       },
     ],
-    [],
+    [onApproveClick, onDisableClick],
   );
 
   const table = useReactTable({

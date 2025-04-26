@@ -1,7 +1,5 @@
 "use client";
-import { CustomerForm } from "@/components/customers/CustomerForm";
 import { CustomerTable } from "@/components/customers/CustomerTable";
-import { EditCustomerForm } from "@/components/customers/EditCustomerForm";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +7,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -21,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import useDebounce from "@/hooks/useDebounce";
 import { registerCustomer, searchCustomers, updateCustomer } from "@/lib/api";
 import {
@@ -44,6 +44,10 @@ export default function CustomerPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
+  const [isDisableDialogOpen, setIsDisableDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [disableReason, setDisableReason] = useState("");
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -126,6 +130,70 @@ export default function CustomerPage() {
       toast.error(
         `Lỗi khi cập nhật khách hàng: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
       );
+    }
+  };
+
+  const handleApproveClick = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsApproveDialogOpen(true);
+  };
+
+  const handleDisableClick = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setDisableReason("");
+    setIsDisableDialogOpen(true);
+  };
+
+  const handleApproveCustomer = async () => {
+    if (!selectedCustomer) return;
+
+    setIsLoading(true);
+    try {
+      // Call the external API to approve the customer
+      await fetch(`/Customer/Approve?customerId=${selectedCustomer.customerId}`, {
+        method: 'POST',
+      });
+
+      toast.success("Khách hàng đã được phê duyệt thành công");
+      setIsApproveDialogOpen(false);
+      refreshData();
+    } catch (error) {
+      console.error("Approve failed:", error);
+      toast.error(
+        `Lỗi khi phê duyệt khách hàng: ${error instanceof Error ? error.message : "Lỗi không xác định"}`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDisableCustomer = async () => {
+    if (!selectedCustomer || !disableReason.trim()) return;
+
+    setIsLoading(true);
+    try {
+      // Call the external API to disable the customer
+      await fetch(`/Customer/Disable`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerId: selectedCustomer.customerId,
+          reason: disableReason
+        }),
+      });
+
+      toast.success("Khách hàng đã bị vô hiệu hóa thành công");
+      setIsDisableDialogOpen(false);
+      refreshData();
+    } catch (error) {
+      console.error("Disable failed:", error);
+      toast.error(
+        `Lỗi khi vô hiệu hóa khách hàng: ${error instanceof Error ? error.message : "Lỗi không xác định"}`
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -227,35 +295,66 @@ export default function CustomerPage() {
             customers={filteredCustomers}
             isLoading={isLoading}
             error={error}
-            onEditClick={handleEditClick}
             onRefresh={refreshData}
+            onApproveClick={handleApproveClick}
+            onDisableClick={handleDisableClick}
           />
         )}
       </div>
 
-      {/* Edit customer dialog */}
+      {/* Approve customer confirmation dialog */}
       <Dialog
-        open={isEditModalOpen}
-        onOpenChange={(open) => {
-          if (!open) setEditingCustomer(null);
-          setIsEditModalOpen(open);
-        }}
+        open={isApproveDialogOpen}
+        onOpenChange={setIsApproveDialogOpen}
       >
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Chỉnh sửa khách hàng</DialogTitle>
+            <DialogTitle>Xác nhận phê duyệt khách hàng</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn phê duyệt khách hàng {selectedCustomer?.firstName} {selectedCustomer?.lastName}?
+            </DialogDescription>
           </DialogHeader>
-          {editingCustomer && (
-            <EditCustomerForm
-              onSubmitAction={handleUpdateCustomer}
-              initialData={editingCustomer}
-              onCancelAction={() => {
-                setIsEditModalOpen(false);
-                setEditingCustomer(null);
-              }}
-              key={`edit-${editingCustomer.customerId}`}
-            />
-          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleApproveCustomer}>
+              Xác nhận
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Disable customer dialog */}
+      <Dialog
+        open={isDisableDialogOpen}
+        onOpenChange={setIsDisableDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Vô hiệu hóa khách hàng</DialogTitle>
+            <DialogDescription>
+              Vui lòng nhập lý do vô hiệu hóa khách hàng {selectedCustomer?.firstName} {selectedCustomer?.lastName}.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Nhập lý do vô hiệu hóa..."
+            value={disableReason}
+            onChange={(e) => setDisableReason(e.target.value)}
+            className="min-h-[100px]"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDisableDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisableCustomer}
+              disabled={!disableReason.trim()}
+            >
+              Vô hiệu hóa
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -8,7 +8,8 @@ import {
   Users,
   Wifi,
   X,
-  ChevronRight
+  ChevronRight,
+  Contact
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,7 +43,8 @@ const sidebarItems: NavItem[] = [
   { label: "Hợp đồng", href: "/contracts", icon: FileText },
   { label: "Bãi đậu xe", href: "/parkinglots", icon: ParkingSquare },
   { label: "Nhiệm vụ", href: "/tasks", icon: ClipboardList },
-  { label: "Cảm biến trạng thái", href: "/sensors", icon: Wifi }
+  { label: "Cảm biến trạng thái", href: "/sensors", icon: Wifi },
+  { label: "Đánh giá", href:"/feedbacks", icon: Contact }
 ];
 
 interface SidebarProps {

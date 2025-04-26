@@ -1,6 +1,8 @@
 export interface Feedback {
-  feedbackId: number;
+  id: number;
   customerId: number;
-  message: string;
-  daySubmitted: string;
+  customerName: string;
+  customerEmail: string;
+  content: string;
+  createdAt: string;
 }
