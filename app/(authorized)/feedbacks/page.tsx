@@ -34,6 +34,7 @@ import {
     Breadcrumb,
 } from "@/components/ui/breadcrumb";
 import useDebounce from "@/hooks/useDebounce";
+import { fetchApi } from "../../../lib/api/api-helper";
 
 // Define Feedback type
 type Feedback = {
@@ -64,7 +65,7 @@ const fetchFeedbacks = async (
     status?: string
 ): Promise<{ data: Feedback[], total: number }> => {
     try {
-        const response = await fetch(`/Feedback/Search?pageIndex=${page}&pageSize=${limit}`);
+        const response = await fetchApi(`/Feedback/Search?pageIndex=${page}&pageSize=${limit}`);
         if (!response.ok) {
             throw new Error('Failed to fetch feedbacks');
         }
