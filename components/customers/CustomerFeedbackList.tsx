@@ -12,7 +12,7 @@ export function CustomerFeedbackList({ feedback }: CustomerFeedbackListProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium">Phản hồi khách hàng</CardTitle>
+        <CardTitle className="text-lg font-medium">Phản hồi của khách hàng</CardTitle>
         <Button
           size="sm"
           variant="outline"
@@ -26,18 +26,15 @@ export function CustomerFeedbackList({ feedback }: CustomerFeedbackListProps) {
           <ul className="space-y-4">
             {feedback.map((item) => (
               <li
-                key={item.id}
+                key={item.feedbackId}
                 className="p-3 border rounded-md bg-gray-50/50"
               >
                 <div className="flex justify-between items-start mb-1">
-                  {/* Use rating field */}
                   <span className="text-xs text-gray-500">
-                    {new Date(item.createdAt).toLocaleDateString()}{" "}
-                    {/* Use date field */}
+                    {item.createdAt}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700">{item.content}</p>{" "}
-                {/* Use message/comment field */}
+                <p className="text-sm text-gray-700">{item.content}</p>
               </li>
             ))}
           </ul>

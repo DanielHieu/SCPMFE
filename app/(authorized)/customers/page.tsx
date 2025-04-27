@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import useDebounce from "@/hooks/useDebounce";
 import { registerCustomer, searchCustomers, updateCustomer } from "@/lib/api";
+import { fetchApi } from "@/lib/api/api-helper";
 import {
   Customer,
   RegisterCustomerPayload,
@@ -31,7 +32,6 @@ import {
 import { ListFilter, PlusCircle, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { fetchApi } from "../../../lib/api/api-helper";
 
 type FilterStatus = "all" | "active" | "inactive";
 type EditCustomerFormData = Omit<UpdateCustomerPayload, "customerId">;
@@ -150,8 +150,8 @@ export default function CustomerPage() {
 
     setIsLoading(true);
     try {
-        // Call the external API to approve the customer
-        await fetchApi(`/Customer/Approve?customerId=${selectedCustomer.customerId}`, {
+      // Call the external API to approve the customer
+      await fetchApi(`/Customer/Approve?customerId=${selectedCustomer.customerId}`, {
         method: 'POST',
       });
 
@@ -173,8 +173,8 @@ export default function CustomerPage() {
 
     setIsLoading(true);
     try {
-        // Call the external API to disable the customer
-        await fetchApi(`/Customer/Disable`, {
+      // Call the external API to disable the customer
+      await fetchApi(`/Customer/Disable`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

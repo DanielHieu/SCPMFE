@@ -12,7 +12,9 @@ import {
     Eye,
     EyeOff,
     RefreshCw,
-    AlertCircle
+    AlertCircle,
+    Home,
+    ChevronRight
 } from "lucide-react";
 import {
     Dialog,
@@ -58,6 +60,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { fetchApi } from "@/lib/api/api-helper";
 import { Area, Floor, ParkingLot, ParkingSpace } from "@/types";
+import {
+    Breadcrumb,
+} from "@/components/ui/breadcrumb";
 
 // Mở rộng kiểu dữ liệu cho nhu cầu giao diện
 type SensorWithUI = ParkingStatusSensor & {
@@ -85,7 +90,6 @@ export default function SensorsPage() {
         inactive: 0,
         maintenance: 0,
     });
-    const [parkingSpaceOptions, setParkingSpaceOptions] = useState<Array<ParkingSpace>>([]);
 
     // Trạng thái cho lựa chọn phân cấp
     const [parkingLots, setParkingLots] = useState<Array<ParkingLot>>([]);
@@ -378,6 +382,11 @@ export default function SensorsPage() {
 
     return (
         <div className="container mx-auto py-6 space-y-6">
+            <Breadcrumb items={[
+                { label: "Trang chủ", href: "/" },
+                { label: "Quản lý cảm biến" },
+            ]} />
+
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Quản lý cảm biến</h1>
