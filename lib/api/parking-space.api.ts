@@ -65,3 +65,12 @@ export async function updateParkingStatusSensor(
 export async function deleteParkingStatusSensor(sensorId: number): Promise<void> {
   await fetchApi(`/Sensor/${sensorId}`, { method: "DELETE" });
 }
+
+export async function updateParkingSpace(
+  payload: UpdateSpacePayload & { status?: string | number }
+): Promise<ParkingSpace> {
+  return await fetchApi(`/ParkingSpace/Update`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}

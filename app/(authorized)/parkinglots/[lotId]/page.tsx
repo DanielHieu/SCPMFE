@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import {
   PlusCircle,
   MapPin,
-  Calendar,
   Info,
   Car,
   Edit,
@@ -41,7 +40,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapDisplay } from "@/components/parkinglots/MapDisplay";
 
 // Import API functions
-import { getParkingLotById, getAreasByLot, getFloorsByArea, getParkingSpacesByFloor, addArea, addFloor, addSpace, updateParkingLot, getParkingLotSummaries } from "@/lib/api";
+import {
+  getParkingLotById, getAreasByLot,
+  getFloorsByArea, getParkingSpacesByFloor, addArea, addFloor,
+  addSpace, updateParkingLot, getParkingLotSummaries, updateArea, updateFloor, updateParkingSpace
+} from "@/lib/api";
 import { Area, Floor, ParkingSpace, RentalType, ParkingSpaceStatus, ParkingLotSummaries } from "@/types";
 
 export default function ParkingLotDetailPage() {
@@ -56,6 +59,7 @@ export default function ParkingLotDetailPage() {
 
   // Trạng thái cho chỉnh sửa bãi đỗ xe
   const [editData, setEditData] = useState({
+    parkingLotName: "",
     address: "",
     pricePerHour: 0,
     pricePerDay: 0,
@@ -74,10 +78,25 @@ export default function ParkingLotDetailPage() {
   const [isAddAreaDialogOpen, setIsAddAreaDialogOpen] = useState(false);
   const [isAddFloorDialogOpen, setIsAddFloorDialogOpen] = useState(false);
   const [isAddSpaceDialogOpen, setIsAddSpaceDialogOpen] = useState(false);
+  const [isEditAreaDialogOpen, setIsEditAreaDialogOpen] = useState(false);
+  const [isEditFloorDialogOpen, setIsEditFloorDialogOpen] = useState(false);
+  const [isEditSpaceDialogOpen, setIsEditSpaceDialogOpen] = useState(false);
   const [newAreaName, setNewAreaName] = useState("");
   const [newAreaRentalType, setNewAreaRentalType] = useState<RentalType>(RentalType.Walkin);
   const [newFloorName, setNewFloorName] = useState("");
   const [newSpaceName, setNewSpaceName] = useState("");
+  const [editAreaData, setEditAreaData] = useState<{ areaId: number, areaName: string }>({
+    areaId: 0,
+    areaName: ""
+  });
+  const [editFloorData, setEditFloorData] = useState<{ floorId: number, floorName: string }>({
+    floorId: 0,
+    floorName: ""
+  });
+  const [editSpaceData, setEditSpaceData] = useState<{ parkingSpaceId: number, parkingSpaceName: string }>({
+    parkingSpaceId: 0,
+    parkingSpaceName: ""
+  });
 
   // Stats for the overview panel
   const [stats, setStats] = useState<ParkingLotSummaries>({
@@ -291,6 +310,7 @@ export default function ParkingLotDetailPage() {
 
         // Initialize edit data
         setEditData({
+          parkingLotName: lotDetails?.parkingLotName || "",
           address: lotDetails?.address || "",
           pricePerHour: lotDetails?.pricePerHour || 0,
           pricePerDay: lotDetails?.pricePerDay || 0,
@@ -514,6 +534,114 @@ export default function ParkingLotDetailPage() {
     }
   };
 
+  // Edit area
+  const handleEditArea = (area: Area) => {
+    setEditAreaData({
+      areaId: area.areaId,
+      areaName: area.areaName ?? ""
+    });
+    setIsEditAreaDialogOpen(true);
+  };
+
+  // Save edited area
+  const handleSaveAreaEdit = async () => {
+    if (!editAreaData.areaName.trim()) {
+      toast.error("Vui lòng nhập tên khu vực");
+      return;
+    }
+
+    console.log(`[ParkingLotDetail] Updating area: ${editAreaData.areaId}`, editAreaData);
+
+    try {
+      await updateArea({
+        areaId: editAreaData.areaId,
+        areaName: editAreaData.areaName
+      });
+
+      console.log(`[ParkingLotDetail] Area updated successfully: ${editAreaData.areaName}`);
+      toast.success("Đã cập nhật thông tin khu vực");
+      setIsEditAreaDialogOpen(false);
+      loadAreas();
+    } catch (err) {
+      console.log(err);
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      console.error(`[ParkingLotDetail] Error updating area:`, errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
+  // Edit floor
+  const handleEditFloor = (floor: Floor) => {
+    setEditFloorData({
+      floorId: floor.floorId,
+      floorName: floor.floorName ?? ""
+    });
+    setIsEditFloorDialogOpen(true);
+  };
+
+  // Save edited floor
+  const handleSaveFloorEdit = async () => {
+    if (!editFloorData.floorName.trim()) {
+      toast.error("Vui lòng nhập tên tầng");
+      return;
+    }
+
+    console.log(`[ParkingLotDetail] Updating floor: ${editFloorData.floorId}`, editFloorData);
+    try {
+      await updateFloor({
+        floorId: editFloorData.floorId,
+        floorName: editFloorData.floorName
+      });
+
+      console.log(`[ParkingLotDetail] Floor updated successfully: ${editFloorData.floorName}`);
+      toast.success("Đã cập nhật thông tin tầng");
+      setIsEditFloorDialogOpen(false);
+      if (selectedArea) {
+        loadFloors(selectedArea);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      //console.error(`[ParkingLotDetail] Error updating floor:`, errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
+  // Edit parking space
+  const handleEditSpace = (space: ParkingSpace) => {
+    setEditSpaceData({
+      parkingSpaceId: space.parkingSpaceId,
+      parkingSpaceName: space.parkingSpaceName ?? ""
+    });
+    setIsEditSpaceDialogOpen(true);
+  };
+
+  // Save edited parking space
+  const handleSaveSpaceEdit = async () => {
+    if (!editSpaceData.parkingSpaceName.trim()) {
+      toast.error("Vui lòng nhập tên vị trí đỗ xe");
+      return;
+    }
+
+    console.log(`[ParkingLotDetail] Updating space: ${editSpaceData.parkingSpaceId}`, editSpaceData);
+    try {
+      await updateParkingSpace({
+        parkingSpaceId: editSpaceData.parkingSpaceId,
+        parkingSpaceName: editSpaceData.parkingSpaceName
+      });
+
+      console.log(`[ParkingLotDetail] Space updated successfully: ${editSpaceData.parkingSpaceName}`);
+      toast.success("Đã cập nhật thông tin vị trí đỗ xe");
+      setIsEditSpaceDialogOpen(false);
+      if (selectedFloor) {
+        loadSpaces(selectedFloor);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      //console.error(`[ParkingLotDetail] Error updating space:`, errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
   // Reset form helpers
   const resetAreaForm = () => {
     setNewAreaName("");
@@ -576,7 +704,7 @@ export default function ParkingLotDetailPage() {
         items={[
           { label: "Trang chủ", href: "/dashboard" },
           { label: "Quản lý bãi đỗ xe", href: "/parkinglots" },
-          { label: lotData.address || `Bãi đỗ xe ${lotId}` }
+          { label: lotData.name }
         ]}
       />
 
@@ -585,7 +713,7 @@ export default function ParkingLotDetailPage() {
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
-              {`Bãi đỗ xe PL${lotId.toString().padStart(2, '0')}`}
+              {lotData.name}
             </h1>
             <div className="flex items-center text-gray-500 mt-2">
               <MapPin className="h-4 w-4 mr-1" />
@@ -593,10 +721,6 @@ export default function ParkingLotDetailPage() {
                 {lotData.address || "Chưa cập nhật địa chỉ"}
                 {lotData.lat && lotData.long ? ` (${lotData.lat.toFixed(6)}, ${lotData.long.toFixed(6)})` : ""}
               </span>
-            </div>
-            <div className="flex items-center text-gray-500 mt-1">
-              <Calendar className="h-4 w-4 mr-1" />
-              <span>Ngày tạo: {lotData.createdDate}</span>
             </div>
             <div className="flex flex-wrap gap-4 mt-3">
               <div className="flex items-center border px-2.5 py-1 rounded-full bg-blue-50 border-blue-200">
@@ -629,6 +753,15 @@ export default function ParkingLotDetailPage() {
                   <DialogTitle>Chỉnh sửa thông tin bãi đỗ xe</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <label htmlFor="parkingLotName" className="text-sm font-medium">Tên bãi đỗ xe</label>
+                    <Input
+                      id="parkingLotName"
+                      value={editData.parkingLotName}
+                      onChange={(e) => setEditData({ ...editData, parkingLotName: e.target.value })}
+                      placeholder="Nhập tên bãi đỗ xe"
+                    />
+                  </div>
                   <div className="grid gap-2">
                     <label htmlFor="address" className="text-sm font-medium">Địa chỉ</label>
                     <Input
@@ -877,9 +1010,20 @@ export default function ParkingLotDetailPage() {
                         <h4 className="font-medium">{area.areaName}</h4>
                         <div className="flex justify-between items-center mt-1">
                           <p className="text-sm text-gray-500">{area.totalFloors} tầng</p>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                            {area.rentalType === RentalType.Walkin ? 'Vãng lai' : 'Hợp đồng'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                              {area.rentalType === RentalType.Walkin ? 'Vãng lai' : 'Hợp đồng'}
+                            </span>
+                            <button
+                              className="text-gray-500 hover:text-blue-500"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditArea(area);
+                              }}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -962,7 +1106,18 @@ export default function ParkingLotDetailPage() {
                           onClick={() => handleFloorChange(floor.floorId)}
                         >
                           <h4 className="font-medium">{floor.floorName}</h4>
-                          <p className="text-sm text-gray-500">{floor.totalParkingSpaces} vị trí</p>
+                          <div className="flex justify-between items-center">
+                            <p className="text-sm text-gray-500">{floor.totalParkingSpaces} vị trí</p>
+                            <button
+                              className="text-gray-500 hover:text-blue-500"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditFloor(floor);
+                              }}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                       ))}
 
@@ -1041,14 +1196,23 @@ export default function ParkingLotDetailPage() {
                         <div
                           key={space.parkingSpaceId}
                           className={getSpaceStyles(space.status, selectedSpace === space.parkingSpaceId)}
-                          onClick={() => handleSpaceSelection(space.parkingSpaceId)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSpaceSelection(space.parkingSpaceId);
+                          }}
                         >
                           <h4 className="font-medium">{space.parkingSpaceName}</h4>
                           <div className="flex justify-between mt-1">
                             <span className={getStatusBadgeStyle(space.status)}>
                               {getStatusText(space.status)}
                             </span>
-                            <button className="text-gray-500 hover:text-blue-500">
+                            <button
+                              className="text-gray-500 hover:text-blue-500"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditSpace(space);
+                              }}
+                            >
                               <Edit className="h-3.5 w-3.5" />
                             </button>
                           </div>
@@ -1074,6 +1238,117 @@ export default function ParkingLotDetailPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Edit Space Dialog */}
+                <Dialog open={isEditSpaceDialogOpen} onOpenChange={setIsEditSpaceDialogOpen}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Chỉnh sửa vị trí đỗ xe</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="editSpaceName">Tên vị trí</Label>
+                        <Input
+                          id="editSpaceName"
+                          value={editSpaceData.parkingSpaceName}
+                          onChange={(e) => setEditSpaceData({
+                            ...editSpaceData,
+                            parkingSpaceName: e.target.value
+                          })}
+                          placeholder="Nhập tên vị trí đỗ xe"
+                          className="focus-visible:ring-blue-500"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditSpaceDialogOpen(false)}
+                      >
+                        Hủy
+                      </Button>
+                      <Button onClick={handleSaveSpaceEdit} className="gap-2">
+                        <Save className="h-4 w-4" />
+                        Lưu thay đổi
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Edit Area Dialog */}
+                <Dialog open={isEditAreaDialogOpen} onOpenChange={setIsEditAreaDialogOpen}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Chỉnh sửa khu vực</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="editAreaName">Tên khu vực</Label>
+                        <Input
+                          id="editAreaName"
+                          value={editAreaData.areaName}
+                          onChange={(e) => setEditAreaData({
+                            ...editAreaData,
+                            areaName: e.target.value
+                          })}
+                          placeholder="Nhập tên khu vực"
+                          className="focus-visible:ring-blue-500"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditAreaDialogOpen(false)}
+                      >
+                        Hủy
+                      </Button>
+                      <Button onClick={handleSaveAreaEdit} className="gap-2">
+                        <Save className="h-4 w-4" />
+                        Lưu thay đổi
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Edit Floor Dialog */}
+                <Dialog open={isEditFloorDialogOpen} onOpenChange={setIsEditFloorDialogOpen}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Chỉnh sửa tầng</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="editFloorName">Tên tầng</Label>
+                        <Input
+                          id="editFloorName"
+                          value={editFloorData.floorName}
+                          onChange={(e) => setEditFloorData({
+                            ...editFloorData,
+                            floorName: e.target.value
+                          })}
+                          placeholder="Nhập tên tầng"
+                          className="focus-visible:ring-blue-500"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditFloorDialogOpen(false)}
+                      >
+                        Hủy
+                      </Button>
+                      <Button onClick={handleSaveFloorEdit} className="gap-2">
+                        <Save className="h-4 w-4" />
+                        Lưu thay đổi
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>

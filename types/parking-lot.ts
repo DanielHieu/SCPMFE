@@ -1,6 +1,6 @@
 export interface ParkingLot {
   parkingLotId: number;
-  ownerId?: 1;
+  parkingLotName: string;
   pricePerHour: number;
   pricePerDay: number;
   pricePerMonth: number;
@@ -23,6 +23,7 @@ export interface ParkingLotSummaries {
 
 export interface UpdateParkingLotPayload {
   parkingLotId: number;
+  parkingLotName: string;
   pricePerHour: number;
   pricePerDay: number;
   pricePerMonth: number;
@@ -32,6 +33,7 @@ export interface UpdateParkingLotPayload {
 }
 
 export interface AddParkingLotPayload {
+  parkingLotName: string;
   ownerId: number;
   pricePerHour: number;
   pricePerDay: number;

@@ -7,8 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   ParkingLot,
-  AddParkingLotPayload,
-  UpdateParkingLotPayload,
 } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +17,7 @@ import { cn } from "@/lib/utils";
 // Schema based on Add/Update API request bodies (Address, Prices H/D/M, Lat/Long)
 // --- UPDATED Schema using z.coerce.number() ---
 const parkingLotSchema = z.object({
+  parkingLotName: z.string().min(1, "Tên bãi đỗ xe là bắt buộc."),
   address: z.string().min(5, "Địa chỉ là bắt buộc (tối thiểu 5 ký tự)."),
 
   // Use z.coerce.number() for required number fields from string input
@@ -79,6 +78,7 @@ export function ParkingLotForm({
   } = useForm<ParkingLotFormData>({
     resolver: zodResolver(parkingLotSchema),
     defaultValues: {
+      parkingLotName: initialData?.parkingLotName || "",
       address: initialData?.address || "",
       // Format numbers back to strings for input defaultValue if needed, or rely on RHF defaults
       pricePerHour: initialData?.pricePerHour ?? undefined,
@@ -99,6 +99,14 @@ export function ParkingLotForm({
 
   return (
     <form onSubmit={handleSubmit(processSubmit)} className="space-y-4">
+      {/* Parking Lot Name */}
+      <div className="space-y-2">
+        <Label htmlFor="parkingLotName">Tên bãi đỗ xe *</Label>
+        <Input id="parkingLotName" {...register("parkingLotName")} />
+        {errors.parkingLotName && (
+          <p className="text-sm text-red-500">{errors.parkingLotName.message}</p>
+        )}
+      </div>
       {/* Address */}
       <div className="space-y-2">
         <Label htmlFor="address">Địa chỉ *</Label>

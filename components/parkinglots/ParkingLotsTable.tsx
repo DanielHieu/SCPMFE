@@ -51,6 +51,16 @@ export function ParkingLotsTable({
     () => [
       { accessorKey: "parkingLotId", header: "ID", size: 50 }, // Example size
       {
+        accessorKey: "name",
+        header: "Tên bãi đỗ xe",
+        size: 200,
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.parkingLotName || "Chưa đặt tên"}
+          </span>
+        ),
+      },
+      {
         accessorKey: "address",
         header: "Địa chỉ",
         size: 400,
