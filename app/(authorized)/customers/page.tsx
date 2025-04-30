@@ -10,31 +10,20 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import useDebounce from "@/hooks/useDebounce";
-import { registerCustomer, searchCustomers, updateCustomer } from "@/lib/api";
+import { searchCustomers} from "@/lib/api";
 import { fetchApi } from "@/lib/api/api-helper";
 import {
   Customer,
-  RegisterCustomerPayload,
-  UpdateCustomerPayload,
 } from "@/types";
-import { ListFilter, PlusCircle, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type FilterStatus = "all" | "active" | "inactive";
-type EditCustomerFormData = Omit<UpdateCustomerPayload, "customerId">;
 
 export default function CustomerPage() {
   const [allCustomer, setALlCustomer] = useState<Customer[]>([]);
@@ -42,9 +31,7 @@ export default function CustomerPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isDisableDialogOpen, setIsDisableDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -88,51 +75,6 @@ export default function CustomerPage() {
   const refreshData = useCallback(() => {
     fetchCustomers(debouncedSearchTerm);
   }, [debouncedSearchTerm, fetchCustomers]);
-
-  const handleAddCustomer = async (
-    formData: Omit<RegisterCustomerPayload, "ownerId">,
-  ) => {
-    const ownerId = 1;
-    try {
-      await registerCustomer({ ...formData, ownerId: ownerId });
-      setIsAddModalOpen(false);
-      refreshData();
-      toast.success("Thêm khách hàng thành công");
-    } catch (error) {
-      console.error("Failed to add customer:", error);
-      toast.error(
-        `Lỗi khi thêm khách hàng: ${error instanceof Error ? error.message : "Lỗi không xác định"}`
-      );
-    }
-  };
-
-  const handleEditClick = (customer: Customer) => {
-    setEditingCustomer(customer);
-    setIsEditModalOpen(true);
-  };
-
-  const handleUpdateCustomer = async (formData: EditCustomerFormData) => {
-    if (!editingCustomer) return;
-
-    const payload: UpdateCustomerPayload = {
-      ...formData,
-      customerId: editingCustomer.customerId,
-    };
-    console.log("Submitting update:", payload);
-    try {
-      await updateCustomer(payload);
-      toast.success("Cập nhật khách hàng thành công.");
-
-      setIsEditModalOpen(false);
-      setEditingCustomer(null);
-      refreshData();
-    } catch (error) {
-      console.error("Update failed:", error);
-      toast.error(
-        `Lỗi khi cập nhật khách hàng: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
-      );
-    }
-  };
 
   const handleApproveClick = (customer: Customer) => {
     setSelectedCustomer(customer);
@@ -215,92 +157,82 @@ export default function CustomerPage() {
           { label: "Quản lý khách hàng" }
         ]}
       />
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-            Khách hàng
+      {/* Unified container with white background */}
+      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        {/* Header section */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Quản lý khách hàng
           </h1>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
-          {/* Search input */}
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        {/* Search section */}
+        <div className="px-6 pt-4 pb-2 border-b border-gray-200">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Tìm kiếm khách hàng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 w-full"
+              className="h-10 pl-9 pr-4 w-full"
             />
           </div>
-
-          {/* Filter dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-10 w-full md:w-auto">
-                <ListFilter className="w-4 h-4 mr-2" />
-                Lọc: {
-                  {
-                    all: "Tất cả khách hàng",
-                    active: "Đang hoạt động",
-                    inactive: "Không hoạt động"
-                  }[filterStatus]
-                }
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Lọc theo trạng thái</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup
-                value={filterStatus}
-                onValueChange={(value) =>
-                  setFilterStatus(value as FilterStatus)
-                }
-              >
-                <DropdownMenuRadioItem value="all">
-                  Tất cả ({counts.all})
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="active">
-                  Đang hoạt động ({counts.active})
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="inactive">
-                  Không hoạt động ({counts.inactive})
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
         </div>
-      </div>
 
-      {/* Table area */}
-      <div className="rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
-        {isLoading && (
-          <div className="p-8 text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
-            <p className="mt-2 text-gray-500">Đang tải dữ liệu khách hàng...</p>
-          </div>
-        )}
-        {error && (
-          <div className="p-8 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
-              <span className="text-red-500 text-xl">!</span>
+        {/* Gmail-style tabs - directly above the table with no gap */}
+        <div className="border-b border-gray-200">
+          <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
+            <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
+              <TabsTrigger 
+                value="all" 
+                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+              >
+                Tất cả ({counts.all})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="active" 
+                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+              >
+                Đang hoạt động ({counts.active})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="inactive" 
+                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+              >
+                Không hoạt động ({counts.inactive})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Table area - no padding to connect directly with tabs */}
+        <div className="pb-0">
+          {isLoading && (
+            <div className="p-8 text-center">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
+              <p className="mt-2 text-gray-500">Đang tải dữ liệu khách hàng...</p>
             </div>
-            <p className="text-red-500">Lỗi: {error}</p>
-          </div>
-        )}
-        {!isLoading && !error && (
-          <CustomerTable
-            customers={filteredCustomers}
-            isLoading={isLoading}
-            error={error}
-            onRefresh={refreshData}
-            onApproveClick={handleApproveClick}
-            onDisableClick={handleDisableClick}
-          />
-        )}
+          )}
+          {error && (
+            <div className="p-8 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
+                <span className="text-red-500 text-xl">!</span>
+              </div>
+              <p className="text-red-500">Lỗi: {error}</p>
+            </div>
+          )}
+          {!isLoading && !error && (
+            <CustomerTable
+              customers={filteredCustomers}
+              isLoading={isLoading}
+              error={error}
+              onRefresh={refreshData}
+              onApproveClick={handleApproveClick}
+              onDisableClick={handleDisableClick}
+            />
+          )}
+        </div>
       </div>
 
       {/* Approve customer confirmation dialog */}

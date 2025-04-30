@@ -15,20 +15,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import useDebounce from "@/hooks/useDebounce";
-import { ListFilter, PlusCircle, Search } from "lucide-react";
+import { ListFilter, PlusCircle, Search, Plus } from "lucide-react";
 import {
   Breadcrumb,
 } from "@/components/ui/breadcrumb";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
+  Tabs, 
+  TabsList, 
+  TabsTrigger
+} from "@/components/ui/tabs";
+import { toast, Toaster } from "sonner";
 
 type FilterStatus = "all" | "active" | "inactive";
 
@@ -64,7 +60,7 @@ export default function StaffPage() {
 
   const filteredStaff = useMemo(() => {
     // IMPORTANT: Check the exact boolean field name in your Staff type ('isActive' or 'isActived')
-    const activeField = "isActived"; // Or 'isActive' if that's the actual field name
+    const activeField = "isActive"; // Changed from isActived to isActive to match StaffTable
     if (filterStatus === "active") {
       return allStaff.filter((s) => s[activeField as keyof Staff]);
     }
@@ -134,7 +130,7 @@ export default function StaffPage() {
 
   // Calculate counts for filter tabs
   const counts = useMemo(() => {
-    const activeField = "isActived"; // Or 'isActive'
+    const activeField = "isActive"; // Changed from isActived to isActive
     return {
       all: allStaff.length,
       active: allStaff.filter((s) => s[activeField as keyof Staff]).length,
@@ -142,130 +138,130 @@ export default function StaffPage() {
     };
   }, [allStaff]);
 
-  // Map filter status to display text
-  const filterDisplayMap: Record<FilterStatus, string> = {
-    all: `Tất cả nhân viên (${counts.all})`,
-    active: `Đang hoạt động (${counts.active})`,
-    inactive: `Không hoạt động (${counts.inactive})`,
-  };
-
   return (
-    <div className="container mx-auto py-6 space-y-4 md:space-y-6">
-      {/* Header & Breadcrumbs */}
-      <Breadcrumb
-        items={[
-          { label: "Trang chủ", href: "/dashboard" },
-          { label: "Quản lý nhân viên" }
-        ]}
-      />
-      <h1 className="text-xl md:text-2xl font-bold text-gray-800 px-1">
-        Quản lý nhân viên
-      </h1>
+    <>
+      <Toaster position="top-right" />
+      <div className="container mx-auto py-6 space-y-6">
+        <Breadcrumb
+          items={[
+            { label: "Trang chủ", href: "/dashboard" },
+            { label: "Quản lý nhân viên" }
+          ]}
+        />
 
-      {/* Filters and Actions Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 px-1">
-        {/* Search and Add */}
-        <div className="w-full md:w-auto md:flex-grow lg:max-w-md relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Tìm kiếm theo tên/số điện thoại..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-xs h-9 pl-9"
-          />
-        </div>
+        {/* Unified container with white background */}
+        <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+          {/* Header section with Add Button */}
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Quản lý nhân viên
+            </h1>
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" /> Thêm nhân viên
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Thêm nhân viên mới</DialogTitle>
+                </DialogHeader>
+                <StaffForm onSubmitAction={handleAddStaff} />
+              </DialogContent>
+            </Dialog>
+          </div>
 
-        {/* Actions (Moved Right) */}
-        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-          {" "}
-          {/* Align buttons right */}
-          {/* Filter Dropdown Button */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
-                <ListFilter className="w-4 h-4 mr-2" />
-                Lọc: {filterDisplayMap[filterStatus]}{" "}
-                {/* Show current filter */}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Lọc theo trạng thái</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {/* Use Radio items for single selection */}
-              <DropdownMenuRadioGroup
-                value={filterStatus}
-                onValueChange={(value) =>
-                  setFilterStatus(value as FilterStatus)
-                }
-              >
-                <DropdownMenuRadioItem value="all">
-                  Tất cả nhân viên ({counts.all})
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="active">
+          {/* Search section */}
+          <div className="px-6 pt-4 pb-2 border-b border-gray-200">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Tìm kiếm theo tên/số điện thoại..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-10 pl-9 pr-4 w-full"
+              />
+            </div>
+          </div>
+
+          {/* Gmail-style tabs - directly above the table with no gap */}
+          <div className="border-b border-gray-200">
+            <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
+              <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
+                <TabsTrigger 
+                  value="all" 
+                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                >
+                  Tất cả ({counts.all})
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="active" 
+                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                >
                   Đang hoạt động ({counts.active})
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="inactive">
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="inactive" 
+                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                >
                   Không hoạt động ({counts.inactive})
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-9">
-                <PlusCircle className="w-4 h-4 mr-2" /> Thêm nhân viên
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Thêm nhân viên mới</DialogTitle>
-              </DialogHeader>
-              <StaffForm onSubmitAction={handleAddStaff} />
-            </DialogContent>
-          </Dialog>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Table area - no padding to connect directly with tabs */}
+          <div className="pb-0">
+            {isLoading && (
+              <div className="p-8 text-center">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
+                <p className="mt-2 text-gray-500">Đang tải dữ liệu nhân viên...</p>
+              </div>
+            )}
+            {error && (
+              <div className="p-8 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
+                  <span className="text-red-500 text-xl">!</span>
+                </div>
+                <p className="text-red-500">Lỗi: {error}</p>
+              </div>
+            )}
+            {!isLoading && !error && (
+              <StaffTable
+                staff={filteredStaff}
+                refreshDataAction={refreshData}
+                onEditClick={handleEditClick}
+              />
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Table Area */}
-      <div className="mt-4 rounded-lg overflow-hidden border border-gray-200 bg-white">
-        {isLoading && <div className="p-6 text-center">Đang tải dữ liệu nhân viên...</div>}
-        {error && (
-          <div className="p-6 text-center text-red-500">Lỗi: {error}</div>
-        )}
-        {!isLoading && !error && (
-          <StaffTable
-            staff={filteredStaff}
-            refreshDataAction={refreshData}
-            onEditClick={handleEditClick}
-          />
-        )}
+        {/* Edit Staff Dialog */}
+        <Dialog
+          open={isEditModalOpen}
+          onOpenChange={(open) => {
+            if (!open) setEditingStaff(null);
+            setIsEditModalOpen(open);
+          }}
+        >
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa nhân viên</DialogTitle>
+            </DialogHeader>
+            {editingStaff && (
+              <StaffForm
+                onSubmitAction={handleUpdateStaff}
+                initialData={editingStaff}
+                onCancelAction={() => {
+                  setIsEditModalOpen(false);
+                  setEditingStaff(null);
+                }}
+                key={`edit-${editingStaff.staffId}`}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Edit Staff Dialog */}
-      <Dialog
-        open={isEditModalOpen}
-        onOpenChange={(open) => {
-          if (!open) setEditingStaff(null);
-          setIsEditModalOpen(open);
-        }}
-      >
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Chỉnh sửa nhân viên</DialogTitle>
-          </DialogHeader>
-          {editingStaff && (
-            <StaffForm
-              onSubmitAction={handleUpdateStaff}
-              initialData={editingStaff}
-              onCancelAction={() => {
-                setIsEditModalOpen(false);
-                setEditingStaff(null);
-              }}
-              key={`edit-${editingStaff.staffId}`}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+    </>
   );
 }

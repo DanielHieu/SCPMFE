@@ -1,36 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
     PlusCircle,
-    ListFilter,
+    Search,
+    RefreshCw,
+    AlertCircle,
     Edit,
     Trash2,
     Copy,
     Eye,
-    EyeOff,
-    RefreshCw,
-    AlertCircle,
-    Home,
-    ChevronRight
+    EyeOff
 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
-    DialogTitle
+    DialogTitle,
+    DialogFooter,
+    DialogDescription
 } from "@/components/ui/dialog";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
     Select,
     SelectContent,
@@ -40,29 +31,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { getParkingStatusSensors } from "@/lib/api/parking-space.api";
+import { ParkingStatusSensor } from "@/types/parkingStatusSensor";
+import { Badge } from "@/components/ui/badge";
+import { fetchApi } from "@/lib/api/api-helper";
+import { Area, Floor, ParkingLot, ParkingSpace } from "@/types";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { getParkingStatusSensors } from "@/lib/api/parking-space.api";
-import { ParkingStatusSensor } from "@/types/parkingStatusSensor";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { fetchApi } from "@/lib/api/api-helper";
-import { Area, Floor, ParkingLot, ParkingSpace } from "@/types";
-import {
-    Breadcrumb,
-} from "@/components/ui/breadcrumb";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useDebounce from "@/hooks/useDebounce";
 
 // Mở rộng kiểu dữ liệu cho nhu cầu giao diện
 type SensorWithUI = ParkingStatusSensor & {
@@ -102,12 +86,7 @@ export default function SensorsPage() {
     const [selectedArea, setSelectedArea] = useState<number | null>(null);
     const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
 
-    const filterDisplayMap: Record<FilterStatus, string> = {
-        all: "Tất cả cảm biến",
-        active: "Đang hoạt động",
-        inactive: "Không hoạt động",
-        maintenance: "Đang bảo trì",
-    };
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
     // Tạo API key ngẫu nhiên
     const generateApiKey = () => {
@@ -141,7 +120,7 @@ export default function SensorsPage() {
     };
 
     // Lấy dữ liệu cảm biến từ API
-    const fetchSensors = async () => {
+    const fetchSensors = useCallback(async (term?: string) => {
         setIsLoading(true);
         setError(null);
         try {
@@ -191,11 +170,12 @@ export default function SensorsPage() {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchSensors();
     }, []);
+
+    // Effect để lấy dữ liệu khi từ khóa tìm kiếm thay đổi
+    useEffect(() => {
+        fetchSensors(debouncedSearchTerm);
+    }, [debouncedSearchTerm, fetchSensors]);
 
     // Ánh xạ trạng thái từ API sang bộ lọc giao diện
     const mapStatusToFilter = (status: string): FilterStatus => {
@@ -206,27 +186,31 @@ export default function SensorsPage() {
         return "all";
     };
 
-    // Lọc cảm biến dựa trên từ khóa tìm kiếm và trạng thái
-    const filteredSensors = sensors.filter((sensor) => {
-        const matchesSearch =
-            sensor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            sensor.parkingSpaceName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            sensor.parkingStatusSensorId?.toString().includes(searchTerm.toLowerCase());
+    // Lọc cảm biến dựa trên trạng thái
+    const filteredSensors = useMemo(() => {
+        if (filterStatus === "active") {
+            return sensors.filter((s) => s.status.toLowerCase() === "active");
+        }
+        if (filterStatus === "inactive") {
+            return sensors.filter((s) => s.status.toLowerCase() === "inactive");
+        }
+        if (filterStatus === "maintenance") {
+            return sensors.filter((s) => s.status.toLowerCase() === "maintenance");
+        }
+        return sensors;
+    }, [sensors, filterStatus]);
 
-        const sensorStatus = mapStatusToFilter(sensor.status);
-        const matchesStatus = filterStatus === "all" || sensorStatus === filterStatus;
-
-        return matchesSearch && matchesStatus;
-    });
+    const refreshData = useCallback(() => {
+        fetchSensors(debouncedSearchTerm);
+    }, [debouncedSearchTerm, fetchSensors]);
 
     // Xử lý thêm cảm biến mới
     const handleAddSensor = async (sensorData: Partial<SensorWithUI>) => {
         try {
-            // Trong triển khai thực tế, bạn sẽ gọi API để tạo cảm biến
             // Chuẩn bị dữ liệu để gửi đến API
             const payload = {
                 apiKey: sensorData.apiKey,
-                parkingSpaceId: sensorData.parkingSpaceId, // Sử dụng ID của tầng đã chọn
+                parkingSpaceId: sensorData.parkingSpaceId,
                 status: "active" // Mặc định trạng thái là active khi tạo mới
             };
 
@@ -242,7 +226,7 @@ export default function SensorsPage() {
             toast.success("Thêm cảm biến thành công");
 
             // Cập nhật danh sách cảm biến
-            fetchSensors();
+            refreshData();
             setIsAddModalOpen(false);
             setNewSensor({}); // Đặt lại biểu mẫu
             // Đặt lại lựa chọn phân cấp
@@ -383,259 +367,247 @@ export default function SensorsPage() {
     return (
         <div className="container mx-auto py-6 space-y-6">
             <Breadcrumb items={[
-                { label: "Trang chủ", href: "/" },
+                { label: "Trang chủ", href: "/dashboard" },
                 { label: "Quản lý cảm biến" },
             ]} />
 
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold">Quản lý cảm biến</h1>
-                    <p className="text-muted-foreground">Xem và quản lý các cảm biến trong hệ thống</p>
+            {/* Unified container with white background */}
+            <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                {/* Header section */}
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Quản lý cảm biến
+                    </h1>
                 </div>
-                <div className="flex gap-2">
-                    <Button onClick={() => fetchSensors()} variant="outline" size="sm">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Làm mới
-                    </Button>
-                    <Button onClick={() => setIsAddModalOpen(true)}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Thêm cảm biến
-                    </Button>
-                </div>
-            </div>
 
-            {/* Bộ lọc và Tìm kiếm */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="md:col-span-3">
-                    <CardContent className="pt-6">
-                        <div className="flex flex-col sm:flex-row gap-4 items-center">
-                            <div className="relative w-full max-w-sm">
-                                <Input
-                                    placeholder="Tìm kiếm cảm biến..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-8"
-                                />
-                                <div className="absolute left-2.5 top-2.5 text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="11" cy="11" r="8"></circle>
-                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                    </svg>
-                                </div>
+                {/* Search section */}
+                <div className="px-6 pt-4 pb-2 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                        <div className="relative w-full max-w-md">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Tìm kiếm cảm biến..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="h-10 pl-9 pr-4 w-full"
+                            />
+                        </div>
+                        <Button onClick={() => setIsAddModalOpen(true)}>
+                            <PlusCircle className="h-4 w-4 mr-2" />
+                            Thêm cảm biến
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Gmail-style tabs - directly above the table with no gap */}
+                <div className="border-b border-gray-200">
+                    <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
+                        <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
+                            <TabsTrigger
+                                value="all"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Tất cả ({counts.all})
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="active"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Đang hoạt động ({counts.active})
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="inactive"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Không hoạt động ({counts.inactive})
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="maintenance"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Đang bảo trì ({counts.maintenance})
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
+
+                {/* Table area - no padding to connect directly with tabs */}
+                <div className="pb-0">
+                    {isLoading && (
+                        <div className="p-8 text-center">
+                            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
+                            <p className="mt-2 text-gray-500">Đang tải dữ liệu cảm biến...</p>
+                        </div>
+                    )}
+                    {error && (
+                        <div className="p-8 text-center">
+                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
+                                <AlertCircle className="text-red-500 h-6 w-6" />
                             </div>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="min-w-[160px]">
-                                        <ListFilter className="h-4 w-4 mr-2" />
-                                        {filterDisplayMap[filterStatus]}
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuLabel>Lọc theo trạng thái</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuRadioGroup
-                                        value={filterStatus}
-                                        onValueChange={(value) => setFilterStatus(value as FilterStatus)}
-                                    >
-                                        <DropdownMenuRadioItem value="all">
-                                            Tất cả ({counts.all})
-                                        </DropdownMenuRadioItem>
-                                        <DropdownMenuRadioItem value="active">
-                                            Đang hoạt động ({counts.active})
-                                        </DropdownMenuRadioItem>
-                                        <DropdownMenuRadioItem value="inactive">
-                                            Không hoạt động ({counts.inactive})
-                                        </DropdownMenuRadioItem>
-                                        <DropdownMenuRadioItem value="maintenance">
-                                            Đang bảo trì ({counts.maintenance})
-                                        </DropdownMenuRadioItem>
-                                    </DropdownMenuRadioGroup>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <p className="text-red-500">Lỗi: {error}</p>
+                            <Button onClick={refreshData} variant="outline" className="mt-4">
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Thử lại
+                            </Button>
                         </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Tổng cảm biến</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{counts.all}</div>
-                        <div className="text-xs text-muted-foreground">
-                            {counts.active} hoạt động, {counts.inactive} không hoạt động, {counts.maintenance} bảo trì
+                    )}
+                    {!isLoading && !error && filteredSensors.length === 0 && (
+                        <div className="p-8 text-center">
+                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
+                                <span className="text-gray-500 text-xl">!</span>
+                            </div>
+                            <p className="text-gray-500">Không tìm thấy cảm biến nào</p>
+                            <p className="text-sm text-gray-400 mt-1">
+                                {searchTerm ? "Hãy điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc" : "Thêm cảm biến mới để bắt đầu"}
+                            </p>
+                            {searchTerm && (
+                                <Button onClick={() => setSearchTerm("")} variant="outline" className="mt-4">
+                                    Xóa bộ lọc
+                                </Button>
+                            )}
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
+                    )}
+                    {!isLoading && !error && filteredSensors.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">ID</th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Tên</th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Vị trí</th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Trạng thái</th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">API Key</th>
+                                        <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredSensors.map((sensor) => {
+                                        const statusDisplay = getStatusDisplay(sensor.status);
 
-            {/* Danh sách cảm biến */}
-            <div className="bg-white rounded-lg border shadow-sm">
-                {isLoading ? (
-                    <div className="p-8">
-                        <div className="space-y-4">
-                            {[...Array(5)].map((_, i) => (
-                                <div key={i} className="flex flex-col space-y-3">
-                                    <Skeleton className="h-4 w-full" />
-                                    <Skeleton className="h-16 w-full" />
-                                </div>
-                            ))}
+                                        return (
+                                            <tr key={sensor.parkingStatusSensorId} className="border-b hover:bg-muted/50">
+                                                <td className="px-4 py-3 text-sm font-medium">{sensor.parkingStatusSensorId}</td>
+                                                <td className="px-4 py-3 text-sm">{sensor.name}</td>
+                                                <td className="px-4 py-3 text-sm">{sensor.parkingSpaceName}</td>
+                                                <td className="px-4 py-3">
+                                                    <Badge
+                                                        variant={statusDisplay.variant as any}
+                                                        className={statusDisplay.className}
+                                                    >
+                                                        {statusDisplay.label}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-sm font-mono">
+                                                            {showApiKey[sensor.parkingStatusSensorId]
+                                                                ? sensor.apiKey
+                                                                : "••••••••••••••••"}
+                                                        </span>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6"
+                                                                        onClick={() => toggleShowApiKey(sensor.parkingStatusSensorId)}
+                                                                    >
+                                                                        {showApiKey[sensor.parkingStatusSensorId] ? (
+                                                                            <EyeOff className="h-3 w-3" />
+                                                                        ) : (
+                                                                            <Eye className="h-3 w-3" />
+                                                                        )}
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    {showApiKey[sensor.parkingStatusSensorId] ? "Ẩn" : "Hiện"} API key
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6"
+                                                                        onClick={() => copyToClipboard(sensor.apiKey)}
+                                                                    >
+                                                                        <Copy className="h-3 w-3" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Sao chép
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-center gap-1">
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8"
+                                                                        onClick={() => {
+                                                                            setEditingSensor(sensor);
+                                                                            setIsEditModalOpen(true);
+                                                                        }}
+                                                                    >
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Chỉnh sửa
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                                                                        onClick={() => {
+                                                                            if (window.confirm("Bạn có chắc chắn muốn xóa cảm biến này?")) {
+                                                                                handleDeleteSensor(sensor.parkingStatusSensorId);
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Xóa
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                ) : error ? (
-                    <div className="p-8 text-center">
-                        <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium">Lỗi khi tải dữ liệu cảm biến</h3>
-                        <p className="text-muted-foreground mb-4">{error}</p>
-                        <Button onClick={fetchSensors}>Thử lại</Button>
-                    </div>
-                ) : filteredSensors.length === 0 ? (
-                    <div className="p-8 text-center">
-                        <h3 className="text-lg font-medium">Không tìm thấy cảm biến</h3>
-                        <p className="text-muted-foreground">
-                            {searchTerm
-                                ? "Hãy điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc"
-                                : "Thêm cảm biến mới để bắt đầu"}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b">
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">ID</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Tên</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Vị trí</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Trạng thái</th>
-                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">API Key</th>
-                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredSensors.map((sensor) => {
-                                    const statusDisplay = getStatusDisplay(sensor.status);
-
-                                    return (
-                                        <tr key={sensor.parkingStatusSensorId} className="border-b hover:bg-muted/50">
-                                            <td className="px-4 py-3 text-sm font-medium">{sensor.parkingStatusSensorId}</td>
-                                            <td className="px-4 py-3 text-sm">{sensor.name}</td>
-                                            <td className="px-4 py-3 text-sm">{sensor.parkingSpaceName}</td>
-                                            <td className="px-4 py-3">
-                                                <Badge
-                                                    variant={statusDisplay.variant as any}
-                                                    className={statusDisplay.className}
-                                                >
-                                                    {statusDisplay.label}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-1">
-                                                    <span className="text-sm font-mono">
-                                                        {showApiKey[sensor.parkingStatusSensorId]
-                                                            ? sensor.apiKey
-                                                            : "••••••••••••••••"}
-                                                    </span>
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-6 w-6"
-                                                                    onClick={() => toggleShowApiKey(sensor.parkingStatusSensorId)}
-                                                                >
-                                                                    {showApiKey[sensor.parkingStatusSensorId] ? (
-                                                                        <EyeOff className="h-3 w-3" />
-                                                                    ) : (
-                                                                        <Eye className="h-3 w-3" />
-                                                                    )}
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                {showApiKey[sensor.parkingStatusSensorId] ? "Ẩn" : "Hiện"} API key
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-6 w-6"
-                                                                    onClick={() => copyToClipboard(sensor.apiKey)}
-                                                                >
-                                                                    <Copy className="h-3 w-3" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                Sao chép
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-center gap-1">
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8"
-                                                                    onClick={() => {
-                                                                        setEditingSensor(sensor);
-                                                                        setIsEditModalOpen(true);
-                                                                    }}
-                                                                >
-                                                                    <Edit className="h-4 w-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                Chỉnh sửa
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8 text-red-500 hover:text-red-600"
-                                                                    onClick={() => {
-                                                                        if (window.confirm("Bạn có chắc chắn muốn xóa cảm biến này?")) {
-                                                                            handleDeleteSensor(sensor.parkingStatusSensorId);
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                Xóa
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
             {/* Add Sensor Modal */}
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold">Thêm cảm biến mới</DialogTitle>
+                        <DialogTitle>Thêm cảm biến mới</DialogTitle>
+                        <DialogDescription>
+                            Thêm một cảm biến mới vào hệ thống. API key sẽ được tạo tự động.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-2">
                         <div className="space-y-2">
@@ -645,7 +617,6 @@ export default function SensorsPage() {
                                 placeholder="Nhập tên cảm biến"
                                 value={newSensor.name || ""}
                                 onChange={(e) => setNewSensor({ ...newSensor, name: e.target.value })}
-                                className="focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
                             />
                         </div>
 
@@ -657,17 +628,16 @@ export default function SensorsPage() {
                                     value={selectedLot?.toString() || ""}
                                     onValueChange={(value) => setSelectedLot(parseInt(value))}
                                 >
-                                    <SelectTrigger id="parkingLot" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                    <SelectTrigger id="parkingLot" className="w-full">
                                         <SelectValue placeholder="Chọn bãi đỗ xe" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            <SelectLabel className="font-semibold text-gray-700">Bãi đỗ xe</SelectLabel>
+                                            <SelectLabel>Bãi đỗ xe</SelectLabel>
                                             {parkingLots.map(lot => (
                                                 <SelectItem
                                                     key={lot.parkingLotId}
                                                     value={lot.parkingLotId?.toString()}
-                                                    className="cursor-pointer hover:bg-gray-100"
                                                 >
                                                     {lot.address}
                                                 </SelectItem>
@@ -684,17 +654,16 @@ export default function SensorsPage() {
                                     onValueChange={(value) => setSelectedArea(parseInt(value))}
                                     disabled={!selectedLot || areas.length === 0}
                                 >
-                                    <SelectTrigger id="area" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                    <SelectTrigger id="area" className="w-full">
                                         <SelectValue placeholder="Chọn khu vực" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            <SelectLabel className="font-semibold text-gray-700">Khu vực</SelectLabel>
+                                            <SelectLabel>Khu vực</SelectLabel>
                                             {areas.map(area => (
                                                 <SelectItem
                                                     key={area.areaId}
                                                     value={area.areaId?.toString()}
-                                                    className="cursor-pointer hover:bg-gray-100"
                                                 >
                                                     {area.areaName}
                                                 </SelectItem>
@@ -715,17 +684,16 @@ export default function SensorsPage() {
                                     onValueChange={(value) => setSelectedFloor(parseInt(value))}
                                     disabled={!selectedArea || floors.length === 0}
                                 >
-                                    <SelectTrigger id="floor" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                    <SelectTrigger id="floor" className="w-full">
                                         <SelectValue placeholder="Chọn tầng" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            <SelectLabel className="font-semibold text-gray-700">Tầng</SelectLabel>
+                                            <SelectLabel>Tầng</SelectLabel>
                                             {floors.map(floor => (
                                                 <SelectItem
                                                     key={floor.floorId}
                                                     value={floor.floorId?.toString()}
-                                                    className="cursor-pointer hover:bg-gray-100"
                                                 >
                                                     {floor.floorName}
                                                 </SelectItem>
@@ -751,22 +719,20 @@ export default function SensorsPage() {
                                             parkingSpaceName: spaceName,
                                             // Set a default name based on the parking space if not set already
                                             name: newSensor.name || `Cảm biến ${spaceName}`,
-                                            // Set a default location based on the parking space
                                         });
                                     }}
                                     disabled={!selectedFloor || parkingSpaces.length === 0}
                                 >
-                                    <SelectTrigger id="parkingSpace" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                    <SelectTrigger id="parkingSpace" className="w-full">
                                         <SelectValue placeholder="Chọn vị trí đỗ xe" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            <SelectLabel className="font-semibold text-gray-700">Vị trí đỗ xe</SelectLabel>
+                                            <SelectLabel>Vị trí đỗ xe</SelectLabel>
                                             {parkingSpaces.map(space => (
                                                 <SelectItem
                                                     key={space.parkingSpaceId}
                                                     value={space.parkingSpaceId?.toString()}
-                                                    className="cursor-pointer hover:bg-gray-100"
                                                 >
                                                     {space.parkingSpaceName}
                                                 </SelectItem>
@@ -784,23 +750,23 @@ export default function SensorsPage() {
                                 value={newSensor.status || "active"}
                                 onValueChange={(value) => setNewSensor({ ...newSensor, status: value })}
                             >
-                                <SelectTrigger id="status" className="w-full focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                <SelectTrigger id="status" className="w-full">
                                     <SelectValue placeholder="Chọn trạng thái" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="active" className="cursor-pointer hover:bg-gray-100">
+                                    <SelectItem value="active">
                                         <div className="flex items-center">
                                             <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
                                             Hoạt động
                                         </div>
                                     </SelectItem>
-                                    <SelectItem value="inactive" className="cursor-pointer hover:bg-gray-100">
+                                    <SelectItem value="inactive">
                                         <div className="flex items-center">
                                             <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
                                             Không hoạt động
                                         </div>
                                     </SelectItem>
-                                    <SelectItem value="maintenance" className="cursor-pointer hover:bg-gray-100">
+                                    <SelectItem value="maintenance">
                                         <div className="flex items-center">
                                             <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
                                             Đang bảo trì
@@ -817,36 +783,33 @@ export default function SensorsPage() {
                                     placeholder="API Key sẽ được tạo tự động"
                                     readOnly
                                     value={newSensor.apiKey || ""}
-                                    className="focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 bg-gray-50"
+                                    className="bg-gray-50"
                                 />
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => setNewSensor({ ...newSensor, apiKey: generateApiKey() })}
-                                    className="hover:bg-gray-100 transition-colors"
                                 >
                                     Tạo
                                 </Button>
                             </div>
                             <p className="text-xs text-gray-500 italic mt-1">API Key dùng để xác thực cảm biến khi gửi dữ liệu</p>
                         </div>
-                        <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 mt-4">
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsAddModalOpen(false)}
-                                className="hover:bg-gray-100 transition-colors"
-                            >
-                                Hủy
-                            </Button>
-                            <Button
-                                onClick={() => handleAddSensor(newSensor)}
-                                disabled={!newSensor.parkingSpaceId || !newSensor.status}
-                                className="bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-                            >
-                                Thêm cảm biến
-                            </Button>
-                        </div>
                     </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsAddModalOpen(false)}
+                        >
+                            Hủy
+                        </Button>
+                        <Button
+                            onClick={() => handleAddSensor(newSensor)}
+                            disabled={!newSensor.parkingSpaceId || !newSensor.apiKey}
+                        >
+                            Thêm cảm biến
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

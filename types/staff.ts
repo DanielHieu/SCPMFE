@@ -8,6 +8,7 @@ export interface Staff {
   username?: string;
   isActive: boolean;
   assignedTask?: string[];
+  fullName : string;
 }
 
 // POST /api/Staff/SearchStaff

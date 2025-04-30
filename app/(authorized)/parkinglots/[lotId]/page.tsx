@@ -712,7 +712,7 @@ export default function ParkingLotDetailPage() {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">
+            <h1 className="text-3xl font-bold tracking-tight">
               {lotData.name}
             </h1>
             <div className="flex items-center text-gray-500 mt-2">

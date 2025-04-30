@@ -53,8 +53,35 @@ export function CustomerTable({
   const columns: ColumnDef<Customer>[] = React.useMemo(
     () => [
       {
-        header: "Tên Khách Hàng",
-        accessorKey: "name", // Sort/filter primarily by name
+        header: ({ column }) => {
+          return (
+            <div
+              className="flex items-center cursor-pointer select-none"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Tên Khách Hàng
+              {column.getIsSorted() === "asc" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              ) : column.getIsSorted() === "desc" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1">
+                  <path fillRule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1 opacity-30">
+                  <path fillRule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+          )
+        },
+        accessorKey: "firstName", 
+        sortingFn: (rowA, rowB) => {
+          const nameA = `${rowA.original.firstName} ${rowA.original.lastName}`.toLowerCase();
+          const nameB = `${rowB.original.firstName} ${rowB.original.lastName}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        },
         cell: ({ row }) => (
           <div className="font-medium">
             {row.original.firstName} {row.original.lastName}
@@ -68,8 +95,30 @@ export function CustomerTable({
         ),
       },
       {
-        header: "Thông tin liên hệ",
-        accessorKey: "email", // Sort/filter primarily by email
+        header: ({ column }) => {
+          return (
+            <div
+              className="flex items-center cursor-pointer select-none"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Thông tin liên hệ
+              {column.getIsSorted() === "asc" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              ) : column.getIsSorted() === "desc" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1">
+                  <path fillRule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1 opacity-30">
+                  <path fillRule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+          )
+        },
+        accessorKey: "email",
         cell: ({ row }) => (
           <div>
             <div>{row.original.email}</div>
@@ -78,7 +127,29 @@ export function CustomerTable({
         ),
       },
       {
-        header: "Trạng Thái",
+        header: ({ column }) => {
+          return (
+            <div
+              className="flex items-center cursor-pointer select-none"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Trạng Thái
+              {column.getIsSorted() === "asc" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              ) : column.getIsSorted() === "desc" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1">
+                  <path fillRule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1 opacity-30">
+                  <path fillRule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+          )
+        },
         accessorKey: "isActive",
         cell: ({ row }) => {
           const isActive = row.getValue("isActive");
@@ -140,6 +211,11 @@ export function CustomerTable({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10, // Set a fixed number of items per page
+      },
+    },
   });
 
   // Handle loading and error states
@@ -168,13 +244,13 @@ export function CustomerTable({
 
   return (
     <>
-      <div className="overflow-x-auto rounded-md border border-slate-200">
+      <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b border-slate-200 hover:bg-transparent">
+              <TableRow key={headerGroup.id} className="bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="whitespace-nowrap text-slate-700 font-medium py-3">
+                  <TableHead key={header.id} className="whitespace-nowrap font-medium text-gray-500 px-6 py-3 border-b">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -192,10 +268,10 @@ export function CustomerTable({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                  className="hover:bg-gray-50 border-b border-gray-100"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3">
+                    <TableCell key={cell.id} className="px-6 py-3">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -208,7 +284,7 @@ export function CustomerTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center text-slate-500"
+                  className="h-24 text-center text-gray-500"
                 >
                   Không có dữ liệu
                 </TableCell>
@@ -218,25 +294,31 @@ export function CustomerTable({
         </Table>
       </div>
       {/* Pagination Controls */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-          className="border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-        >
-          Trước
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-          className="border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-        >
-          Tiếp
-        </Button>
+      <div className="flex items-center justify-between px-6 py-3 border-t">
+        <div className="text-sm text-gray-500">
+          Hiển thị {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+          {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, customers.length)} trong số {customers.length} khách hàng
+        </div>
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className="border-gray-200 text-gray-600"
+          >
+            Trước
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className="border-gray-200 text-gray-600"
+          >
+            Tiếp
+          </Button>
+        </div>
       </div>
     </>
   );

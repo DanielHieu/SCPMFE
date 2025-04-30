@@ -1,216 +1,272 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, ListFilter, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { PlusCircle, Search, RefreshCw, CheckCircle2, Clock, AlertCircle, Eye, Edit2, CalendarDays, User, FileBadge, CornerDownRight, MoreVertical, Trash2 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
+    DialogFooter,
+    DialogDescription,
 } from "@/components/ui/dialog";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
+    SelectGroup,
+    SelectLabel,
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useDebounce from "@/hooks/useDebounce";
+import { fetchApi } from "@/lib/api/api-helper";
+import { AddTaskPayload, Task, UpdateTaskPayload } from "@/types/taskEach";
+import { Staff } from "@/types";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-type Task = {
-    id: string;
-    title: string;
-    description: string;
-    assignedTo: string;
-    assigneeName: string;
-    status: "pending" | "in-progress" | "completed";
-    priority: "low" | "medium" | "high";
-    dueDate: string;
-    createdAt: string;
-};
-
-type FilterStatus = "all" | "pending" | "in-progress" | "completed";
+type FilterStatus = "All" | "Pending" | "InProgress" | "Completed";
 
 export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+    const [filterStatus, setFilterStatus] = useState<FilterStatus>("All");
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [counts, setCounts] = useState({
         all: 0,
         pending: 0,
-        "in-progress": 0,
+        inProgress: 0,
         completed: 0,
     });
+    const [staffList, setStaffList] = useState<Staff[]>([]);
+    const [isStaffLoading, setIsStaffLoading] = useState(false);
+    const [dateError, setDateError] = useState<string | null>(null);
+    const [formErrors, setFormErrors] = useState<{
+        title?: string;
+        description?: string;
+    }>({});
 
-    // Mock data for demonstration
-    const mockTasks: Task[] = [
-        {
-            id: "1",
-            title: "Kiểm tra hệ thống cảm biến",
-            description: "Kiểm tra và bảo trì hệ thống cảm biến tại bãi đậu xe A",
-            assignedTo: "user1",
-            assigneeName: "Nguyễn Văn A",
-            status: "pending",
-            priority: "high",
-            dueDate: "2023-12-15",
-            createdAt: "2023-12-01",
-        },
-        {
-            id: "2",
-            title: "Cập nhật phần mềm quản lý",
-            description: "Cập nhật phiên bản mới cho phần mềm quản lý bãi đỗ xe",
-            assignedTo: "user2",
-            assigneeName: "Trần Thị B",
-            status: "in-progress",
-            priority: "medium",
-            dueDate: "2023-12-20",
-            createdAt: "2023-12-05",
-        },
-        {
-            id: "3",
-            title: "Sửa chữa barrier cổng vào",
-            description: "Sửa chữa barrier tại cổng vào bị hỏng",
-            assignedTo: "user3",
-            assigneeName: "Lê Văn C",
-            status: "completed",
-            priority: "high",
-            dueDate: "2023-12-10",
-            createdAt: "2023-12-02",
-        },
-        {
-            id: "4",
-            title: "Kiểm tra camera an ninh",
-            description: "Kiểm tra hệ thống camera an ninh tại tầng 2",
-            assignedTo: "user1",
-            assigneeName: "Nguyễn Văn A",
-            status: "pending",
-            priority: "low",
-            dueDate: "2023-12-25",
-            createdAt: "2023-12-07",
-        },
-        {
-            id: "5",
-            title: "Báo cáo doanh thu tháng",
-            description: "Lập báo cáo doanh thu tháng 11/2023",
-            assignedTo: "user2",
-            assigneeName: "Trần Thị B",
-            status: "in-progress",
-            priority: "medium",
-            dueDate: "2023-12-30",
-            createdAt: "2023-12-10",
-        },
-    ];
+    // State cho form thêm mới nhiệm vụ
+    const [newTask, setNewTask] = useState<Partial<Task>>({
+        title: "",
+        description: "",
+        assignedToId: undefined,
+        assigneeName: "",
+        priority: "Medium",
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0]
+    });
+
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewingTask, setViewingTask] = useState<Task | null>(null);
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
     const filterDisplayMap: Record<FilterStatus, string> = {
-        all: "Tất cả nhiệm vụ",
-        pending: "Chờ xử lý",
-        "in-progress": "Đang thực hiện",
-        completed: "Hoàn thành",
+        All: "Tất cả nhiệm vụ",
+        Pending: "Chờ xử lý",
+        InProgress: "Đang thực hiện",
+        Completed: "Hoàn thành",
     };
 
     // Fetch tasks data
-    useEffect(() => {
-        const fetchTasks = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                // In a real app, this would be an API call
-                // const response = await fetch("/api/tasks");
-                // const data = await response.json();
-
-                // Using mock data for demonstration
-                setTimeout(() => {
-                    setTasks(mockTasks);
-
-                    // Calculate counts
-                    const all = mockTasks.length;
-                    const pending = mockTasks.filter(task => task.status === "pending").length;
-                    const inProgress = mockTasks.filter(task => task.status === "in-progress").length;
-                    const completed = mockTasks.filter(task => task.status === "completed").length;
-
-                    setCounts({
-                        all,
-                        pending,
-                        "in-progress": inProgress,
-                        completed,
-                    });
-
-                    setIsLoading(false);
-                }, 1000);
-            } catch (err) {
-                setError("Failed to fetch tasks");
-                setIsLoading(false);
-            }
-        };
-
-        fetchTasks();
-    }, []);
-
-    // Filter tasks based on search term and status
-    const filteredTasks = tasks.filter(task => {
-        const matchesSearch =
-            task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            task.assigneeName.toLowerCase().includes(searchTerm.toLowerCase());
-
-        const matchesStatus = filterStatus === "all" || task.status === filterStatus;
-
-        return matchesSearch && matchesStatus;
-    });
-
-    // Handle adding a new task
-    const handleAddTask = async (taskData: Partial<Task>) => {
+    const fetchTasks = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
         try {
-            // In a real app, this would be an API call
-            // const response = await fetch("/api/tasks", {
-            //     method: "POST",
-            //     headers: { "Content-Type": "application/json" },
-            //     body: JSON.stringify(taskData),
-            // });
+            // Gọi API thực tế để lấy danh sách nhiệm vụ
+            const response = await fetchApi('/taskEach/search', {
+                method: 'POST',
+                body: JSON.stringify({
+                    searchTerm: debouncedSearchTerm,
+                    status: filterStatus !== "All" ? filterStatus : undefined
+                })
+            });
+            if (Array.isArray(response)) {
+                setTasks(response);
 
-            // Mock implementation
-            const newTask: Task = {
-                id: `task-${Date.now()}`,
-                title: taskData.title || "New Task",
-                description: taskData.description || "",
-                assignedTo: taskData.assignedTo || "user1",
-                assigneeName: taskData.assigneeName || "Nguyễn Văn A",
-                status: taskData.status || "pending",
-                priority: taskData.priority || "medium",
-                dueDate: taskData.dueDate || new Date().toISOString().split('T')[0],
-                createdAt: new Date().toISOString().split('T')[0],
-            };
+                // Cập nhật số lượng cho từng trạng thái
+                setCounts({
+                    all: response.length,
+                    pending: response.filter(task => task.status === "Pending").length,
+                    inProgress: response.filter(task => task.status === "InProgress").length,
+                    completed: response.filter(task => task.status === "Completed").length,
+                });
+            } else {
+                throw new Error('Invalid data format received from API');
+            }
+        } catch (err) {
+            console.error('Error fetching tasks:', err);
+            setError(err instanceof Error ? err.message : "Failed to fetch tasks");
+            toast.error("Không thể tải danh sách nhiệm vụ");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [debouncedSearchTerm, filterStatus]);
 
-            setTasks([...tasks, newTask]);
-
-            // Update counts
-            setCounts({
-                ...counts,
-                all: counts.all + 1,
-                [newTask.status]: counts[newTask.status as keyof typeof counts] + 1,
+    // Fetch staff list
+    const fetchStaffList = useCallback(async () => {
+        setIsStaffLoading(true);
+        try {
+            const response = await fetchApi('/Staff/GetAll', {
+                method: 'GET'
             });
 
-            toast.success("Nhiệm vụ đã được tạo thành công");
+            if (Array.isArray(response)) {
+                setStaffList(response);
+                console.log("Staff list:", response);
+            } else {
+                console.error('Invalid staff data format received from API');
+            }
+        } catch (err) {
+            console.error('Error fetching staff list:', err);
+            toast.error("Không thể tải danh sách nhân viên");
+        } finally {
+            setIsStaffLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchTasks();
+        fetchStaffList();
+    }, [fetchTasks, fetchStaffList]);
+
+    // Filter tasks based on status
+    const filteredTasks = useMemo(() => {
+        if (filterStatus === "All") {
+            return tasks.filter(task =>
+                task.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                task.assigneeName.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+            );
+        }
+
+        return tasks.filter(task => {
+            const matchesSearch =
+                task.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                task.assigneeName.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+
+            return matchesSearch && task.status === filterStatus;
+        });
+    }, [tasks, filterStatus, debouncedSearchTerm]);
+
+    const refreshData = useCallback(() => {
+        fetchTasks();
+    }, [fetchTasks]);
+
+    // Hàm kiểm tra thời gian hợp lệ
+    const validateDates = (startDate: string, endDate: string): boolean => {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        if (end < start) {
+            setDateError("Ngày kết thúc phải sau ngày bắt đầu");
+            return false;
+        }
+
+        setDateError(null);
+        return true;
+    };
+
+    // Validate form fields
+    const validateForm = (data: Partial<Task>): boolean => {
+        const errors: {
+            title?: string;
+            description?: string;
+        } = {};
+        
+        // Validate title
+        if (!data.title || data.title.trim() === '') {
+            errors.title = "Tiêu đề không được để trống";
+        }
+        
+        // Validate description
+        if (!data.description || data.description.trim() === '') {
+            errors.description = "Mô tả không được để trống";
+        }
+        
+        setFormErrors(errors);
+        
+        // Form is valid if there are no errors
+        return Object.keys(errors).length === 0;
+    };
+
+    // Handle adding a new task
+    const handleAddTask = async () => {
+        try {
+            // Validate form
+            if (!validateForm(newTask)) {
+                return;
+            }
+            
+            // Check if assignedToId is set
+            if (!newTask.assignedToId) {
+                toast.error("Vui lòng chọn người thực hiện");
+                return;
+            }
+            
+            // Validate dates
+            if (!validateDates(newTask.startDate || "", newTask.endDate || "")) {
+                return;
+            }
+
+            const payload: AddTaskPayload = {
+                title: newTask.title || "",
+                description: newTask.description || "",
+                assignedToId: newTask.assignedToId,
+                priority: newTask.priority as Task["priority"] || "Medium",
+                startDate: new Date(newTask.startDate || new Date().toISOString().split('T')[0]),
+                endDate: new Date(newTask.endDate || new Date().toISOString().split('T')[0]),
+            }
+
+            // Call API to add task
+            const response = await fetchApi("/TaskEach/Add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (response) {
+                toast.success("Nhiệm vụ đã được tạo thành công");
+                // Refresh task list
+                fetchTasks();
+            } else {
+                toast.error("Không thể tạo nhiệm vụ");
+            }
+
             setIsAddModalOpen(false);
+
+            // Reset form
+            setNewTask({
+                title: "",
+                description: "",
+                assignedToId: undefined,
+                priority: "Medium",
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: new Date().toISOString().split('T')[0]
+            });
         } catch (err) {
             toast.error("Lỗi khi tạo nhiệm vụ: " + (err instanceof Error ? err.message : "Unknown error"));
         }
@@ -219,55 +275,135 @@ export default function TasksPage() {
     // Handle updating a task
     const handleUpdateTask = async (taskData: Task) => {
         try {
-            // In a real app, this would be an API call
-            // const response = await fetch(`/api/tasks/${taskData.id}`, {
-            //     method: "PUT",
-            //     headers: { "Content-Type": "application/json" },
-            //     body: JSON.stringify(taskData),
-            // });
-
-            // Mock implementation
-            const oldStatus = tasks.find(t => t.id === taskData.id)?.status;
-            const updatedTasks = tasks.map(task =>
-                task.id === taskData.id ? taskData : task
-            );
-
-            setTasks(updatedTasks);
-
-            // Update counts if status changed
-            if (oldStatus && oldStatus !== taskData.status) {
-                setCounts({
-                    ...counts,
-                    [oldStatus]: counts[oldStatus as keyof typeof counts] - 1,
-                    [taskData.status]: counts[taskData.status as keyof typeof counts] + 1,
-                });
+            // Validate form
+            if (!validateForm(taskData)) {
+                return;
+            }
+            
+            // Check if assignedToId is set
+            if (!taskData.assignedToId) {
+                toast.error("Vui lòng chọn người thực hiện");
+                return;
             }
 
-            toast.success("Nhiệm vụ đã được cập nhật thành công");
+            // Validate dates
+            if (!validateDates(taskData.startDate || "", taskData.endDate || "")) {
+                return;
+            }
+
+            // Format dates properly and log for verification
+            const formattedStartDate = new Date(taskData.startDate);
+            const formattedEndDate = new Date(taskData.endDate);
+            
+            console.log("Date format check - Original:", {
+                startDate: taskData.startDate,
+                endDate: taskData.endDate
+            });
+            console.log("Date format check - Formatted:", {
+                startDate: formattedStartDate,
+                endDate: formattedEndDate
+            });
+            
+            const payload: UpdateTaskPayload = {
+                taskEachId: taskData.taskEachId,
+                title: taskData.title,
+                description: taskData.description || "",
+                assignedToId: taskData.assignedToId,
+                priority: taskData.priority,
+                startDate: formattedStartDate,
+                endDate: formattedEndDate,
+            };
+
+            console.log("Update payload:", payload); // Debug log
+
+            // Call API to update task
+            const response = await fetchApi(`/TaskEach/Update`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (response) {
+                toast.success("Nhiệm vụ đã được cập nhật thành công");
+                // Refresh task list
+                fetchTasks();
+            } else {
+                toast.error("Không thể cập nhật nhiệm vụ");
+            }
+
             setIsEditModalOpen(false);
             setEditingTask(null);
         } catch (err) {
+            console.error("Error updating task:", err);
             toast.error("Lỗi khi cập nhật nhiệm vụ: " + (err instanceof Error ? err.message : "Unknown error"));
         }
     };
 
-    // Format date
+    // Format date for input type="date" (YYYY-MM-DD)
+    const formatDateInput = (dateString: string) => {
+        if (!dateString) return "";
+        
+        try {
+            // Check if the date is in dd/MM/yyyy format
+            if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const [day, month, year] = dateString.split('/').map(Number);
+                // Fix timezone issue by using direct date construction with local time
+                return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            }
+            
+            // Handle standard date format
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            
+            // Fix timezone issue by extracting date parts directly
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        } catch (error) {
+            console.error("Error formatting date for input:", error);
+            return dateString;
+        }
+    };
+    
+    // Format date for display as dd/MM/yyyy
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('vi-VN');
+        if (!dateString) return "";
+        
+        try {
+            // Check if already in dd/MM/yyyy format
+            if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                return dateString;
+            }
+            
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            
+            // Format as dd/MM/yyyy
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            
+            return `${day}/${month}/${year}`;
+        } catch (error) {
+            console.error("Error formatting date for display:", error);
+            return dateString;
+        }
     };
 
     // Get status badge
     const getStatusBadge = (status: Task['status']) => {
         switch (status) {
-            case 'pending':
+            case 'Pending':
                 return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                     <Clock className="w-3 h-3 mr-1" /> Chờ xử lý
                 </Badge>;
-            case 'in-progress':
+            case 'InProgress':
                 return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                     <AlertCircle className="w-3 h-3 mr-1" /> Đang thực hiện
                 </Badge>;
-            case 'completed':
+            case 'Completed':
                 return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                     <CheckCircle2 className="w-3 h-3 mr-1" /> Hoàn thành
                 </Badge>;
@@ -279,364 +415,829 @@ export default function TasksPage() {
     // Get priority badge
     const getPriorityBadge = (priority: Task['priority']) => {
         switch (priority) {
-            case 'low':
+            case 'Low':
                 return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Thấp</Badge>;
-            case 'medium':
+            case 'Medium':
                 return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Trung bình</Badge>;
-            case 'high':
+            case 'High':
                 return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Cao</Badge>;
             default:
                 return null;
         }
     };
 
+    // Debug effect for editingTask date values
+    useEffect(() => {
+        if (editingTask) {
+            console.log("Editing task dates:", {
+                startDate: editingTask.startDate,
+                endDate: editingTask.endDate,
+                formattedStartDate: formatDateInput(editingTask.startDate),
+                formattedEndDate: formatDateInput(editingTask.endDate)
+            });
+        }
+    }, [editingTask]);
+
+    // Handle deleting a task
+    const handleDeleteTask = async (taskId: number) => {
+        if (!taskId) return;
+        
+        setIsDeleting(true);
+        try {
+            // Call API to delete task
+            await fetchApi(`/TaskEach/${taskId}`, {
+                method: "DELETE",
+            });
+            
+            toast.success("Nhiệm vụ đã được xóa thành công");
+            // Refresh task list
+            fetchTasks();
+            
+            setIsDeleteModalOpen(false);
+            setDeletingTask(null);
+        } catch (err) {
+            console.error("Error deleting task:", err);
+            toast.error("Lỗi khi xóa nhiệm vụ: " + (err instanceof Error ? err.message : "Unknown error"));
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <div className="container mx-auto py-6 space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold tracking-tight">Quản lý nhiệm vụ</h1>
-            </div>
+            <Breadcrumb
+                items={[
+                    { label: "Trang chủ", href: "/dashboard" },
+                    { label: "Quản lý nhiệm vụ" }
+                ]}
+            />
 
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 px-1">
-                <div className="w-full md:w-auto md:flex-grow lg:max-w-md">
-                    <Input
-                        placeholder="Tìm kiếm nhiệm vụ/người được giao..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-9 w-full"
-                    />
+            {/* Unified container with white background */}
+            <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                {/* Header section */}
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Quản lý nhiệm vụ
+                    </h1>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9">
-                                <ListFilter className="w-4 h-4 mr-2" />
-                                Lọc: {filterDisplayMap[filterStatus]}{" "}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Lọc theo trạng thái</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuRadioGroup
-                                value={filterStatus}
-                                onValueChange={(value) =>
-                                    setFilterStatus(value as FilterStatus)
-                                }
-                            >
-                                <DropdownMenuRadioItem value="all">
-                                    Tất cả nhiệm vụ ({counts.all})
-                                </DropdownMenuRadioItem>
-                                <DropdownMenuRadioItem value="pending">
-                                    Chờ xử lý ({counts.pending})
-                                </DropdownMenuRadioItem>
-                                <DropdownMenuRadioItem value="in-progress">
-                                    Đang thực hiện ({counts["in-progress"]})
-                                </DropdownMenuRadioItem>
-                                <DropdownMenuRadioItem value="completed">
-                                    Hoàn thành ({counts.completed})
-                                </DropdownMenuRadioItem>
-                            </DropdownMenuRadioGroup>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" className="h-9">
-                                <PlusCircle className="w-4 h-4 mr-2" />
-                                Thêm nhiệm vụ
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                                <DialogTitle>Thêm nhiệm vụ mới</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="title">Tiêu đề</Label>
-                                    <Input id="title" placeholder="Nhập tiêu đề nhiệm vụ" />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="description">Mô tả</Label>
-                                    <Textarea id="description" placeholder="Nhập mô tả chi tiết" rows={3} />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="assignee">Người được giao</Label>
-                                        <Select defaultValue="user1">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Chọn người thực hiện" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="user1">Nguyễn Văn A</SelectItem>
-                                                <SelectItem value="user2">Trần Thị B</SelectItem>
-                                                <SelectItem value="user3">Lê Văn C</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="priority">Mức độ ưu tiên</Label>
-                                        <Select defaultValue="medium">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Chọn mức độ ưu tiên" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="low">Thấp</SelectItem>
-                                                <SelectItem value="medium">Trung bình</SelectItem>
-                                                <SelectItem value="high">Cao</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="status">Trạng thái</Label>
-                                        <Select defaultValue="pending">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Chọn trạng thái" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="pending">Chờ xử lý</SelectItem>
-                                                <SelectItem value="in-progress">Đang thực hiện</SelectItem>
-                                                <SelectItem value="completed">Hoàn thành</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="dueDate">Hạn hoàn thành</Label>
-                                        <Input id="dueDate" type="date" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-3 pt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsAddModalOpen(false)}
-                                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                                >
-                                    Hủy
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => {
-                                        handleAddTask({
-                                            title: (document.getElementById("title") as HTMLInputElement)?.value || "",
-                                            description: (document.getElementById("description") as HTMLTextAreaElement)?.value || "",
-                                            dueDate: (document.getElementById("dueDate") as HTMLInputElement)?.value || "",
-                                        });
-                                    }}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                >
-                                    Tạo nhiệm vụ
-                                </Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
-
-            {isLoading ? (
-                <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
-                </div>
-            ) : error ? (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-                    {error}
-                </div>
-            ) : filteredTasks.length === 0 ? (
-                <div className="text-center py-12 border rounded-lg bg-gray-50">
-                    <p className="text-gray-500">Không tìm thấy nhiệm vụ nào phù hợp với bộ lọc.</p>
-                </div>
-            ) : (
-                <div className="bg-white border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-gray-50 border-b">
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Tiêu đề
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Người được giao
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Trạng thái
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Ưu tiên
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Hạn hoàn thành
-                                    </th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Thao tác
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {filteredTasks.map((task) => (
-                                    <tr key={task.id} className="hover:bg-gray-50">
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <div className="font-medium text-gray-900">{task.title}</div>
-                                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                                                {task.description}
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{task.assigneeName}</div>
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            {getStatusBadge(task.status)}
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            {getPriorityBadge(task.priority)}
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                            {formatDate(task.dueDate)}
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setEditingTask(task);
-                                                    setIsEditModalOpen(true);
-                                                }}
-                                                className="text-blue-600 hover:text-blue-800"
-                                            >
-                                                Chỉnh sửa
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                {/* Search section */}
+                <div className="px-6 pt-4 pb-2 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                        <div className="relative w-full max-w-md">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Tìm kiếm nhiệm vụ/người được giao..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="h-10 pl-9 pr-4 w-full"
+                            />
+                        </div>
+                        <Button onClick={() => setIsAddModalOpen(true)}>
+                            <PlusCircle className="h-4 w-4 mr-2" />
+                            Thêm nhiệm vụ
+                        </Button>
                     </div>
                 </div>
-            )}
 
-            {/* Edit Task Dialog */}
-            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>Chi tiết nhiệm vụ</DialogTitle>
-                    </DialogHeader>
-                    {editingTask && (
-                        <div className="space-y-4">
-                            <div className="grid gap-4 py-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit-title">Tiêu đề</Label>
-                                    <Input
-                                        id="edit-title"
-                                        defaultValue={editingTask.title}
-                                        onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit-description">Mô tả</Label>
-                                    <Textarea
-                                        id="edit-description"
-                                        rows={3}
-                                        defaultValue={editingTask.description}
-                                        onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="edit-assignee">Người được giao</Label>
-                                        <Select
-                                            defaultValue={editingTask.assignedTo}
-                                            onValueChange={(value) => {
-                                                const assigneeName =
-                                                    value === "user1" ? "Nguyễn Văn A" :
-                                                        value === "user2" ? "Trần Thị B" : "Lê Văn C";
-                                                setEditingTask({
-                                                    ...editingTask,
-                                                    assignedTo: value,
-                                                    assigneeName
-                                                });
-                                            }}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Chọn người thực hiện" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="user1">Nguyễn Văn A</SelectItem>
-                                                <SelectItem value="user2">Trần Thị B</SelectItem>
-                                                <SelectItem value="user3">Lê Văn C</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="edit-priority">Mức độ ưu tiên</Label>
-                                        <Select
-                                            defaultValue={editingTask.priority}
-                                            onValueChange={(value) => setEditingTask({
-                                                ...editingTask,
-                                                priority: value as Task['priority']
-                                            })}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Chọn mức độ ưu tiên" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="low">Thấp</SelectItem>
-                                                <SelectItem value="medium">Trung bình</SelectItem>
-                                                <SelectItem value="high">Cao</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="edit-status">Trạng thái</Label>
-                                        <Select
-                                            defaultValue={editingTask.status}
-                                            onValueChange={(value) => setEditingTask({
-                                                ...editingTask,
-                                                status: value as Task['status']
-                                            })}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Chọn trạng thái" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="pending">Chờ xử lý</SelectItem>
-                                                <SelectItem value="in-progress">Đang thực hiện</SelectItem>
-                                                <SelectItem value="completed">Hoàn thành</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="edit-dueDate">Hạn hoàn thành</Label>
-                                        <Input
-                                            id="edit-dueDate"
-                                            type="date"
-                                            defaultValue={editingTask.dueDate}
-                                            onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                {/* Gmail-style tabs - directly above the table with no gap */}
+                <div className="border-b border-gray-200">
+                    <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
+                        <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
+                            <TabsTrigger
+                                key="All"
+                                value="All"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Tất cả ({counts.all})
+                            </TabsTrigger>
+                            <TabsTrigger
+                                key="Pending"
+                                value="Pending"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Chờ xử lý ({counts.pending})
+                            </TabsTrigger>
+                            <TabsTrigger
+                                key="InProgress"
+                                value="InProgress"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Đang thực hiện ({counts.inProgress})
+                            </TabsTrigger>
+                            <TabsTrigger
+                                key="Completed"
+                                value="Completed"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Hoàn thành ({counts.completed})
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
 
-                            <div className="flex justify-end gap-3 pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsEditModalOpen(false)}
-                                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                                >
-                                    Đóng
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => {
-                                        handleUpdateTask(editingTask);
-                                    }}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                >
-                                    Cập nhật
-                                </Button>
-                            </div>
+                {/* Table area - no padding to connect directly with tabs */}
+                <div className="pb-0">
+                    {isLoading && (
+                        <div className="p-8 text-center">
+                            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
+                            <p className="mt-2 text-gray-500">Đang tải dữ liệu nhiệm vụ...</p>
                         </div>
                     )}
-                </DialogContent>
-            </Dialog>
+                    {error && (
+                        <div className="p-8 text-center">
+                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
+                                <AlertCircle className="text-red-500 h-6 w-6" />
+                            </div>
+                            <p className="text-red-500">Lỗi: {error}</p>
+                            <Button onClick={refreshData} variant="outline" className="mt-4">
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Thử lại
+                            </Button>
+                        </div>
+                    )}
+                    {!isLoading && !error && filteredTasks.length === 0 && (
+                        <div className="p-8 text-center">
+                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
+                                <span className="text-gray-500 text-xl">!</span>
+                            </div>
+                            <p className="text-gray-500">Không tìm thấy nhiệm vụ nào</p>
+                            <p className="text-sm text-gray-400 mt-1">
+                                {searchTerm ? "Hãy điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc" : "Thêm nhiệm vụ mới để bắt đầu"}
+                            </p>
+                            {searchTerm && (
+                                <Button onClick={() => setSearchTerm("")} variant="outline" className="mt-4">
+                                    Xóa bộ lọc
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                    {!isLoading && !error && filteredTasks.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                            Tiêu đề
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                            Nhân viên xử lý
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                            Trạng thái
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                            Ưu tiên
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                            Thời gian
+                                        </th>
+                                        <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                            Thao tác
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredTasks.map((task) => (
+                                        <tr key={task.taskEachId} className="border-b hover:bg-muted/50">
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium text-gray-900">{task.title}</div>
+                                                <div className="text-sm text-gray-500 truncate max-w-xs">
+                                                    {task.description}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-sm text-gray-900">{task.assigneeName}</div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {getStatusBadge(task.status)}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {getPriorityBadge(task.priority)}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-500">
+                                                <div>{task.startDate} - {task.endDate}</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-right text-sm font-medium">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Mở menu</span>
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={() => {
+                                                                setViewingTask(task);
+                                                                setIsViewModalOpen(true);
+                                                            }}
+                                                            className="flex items-center cursor-pointer"
+                                                        >
+                                                            <Eye className="h-4 w-4 mr-2" />
+                                                            Xem chi tiết
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => {
+                                                                // Make sure to format dates correctly when setting the editing task
+                                                                const taskForEdit = {
+                                                                    ...task,
+                                                                    startDate: task.startDate || new Date().toISOString().split('T')[0],
+                                                                    endDate: task.endDate || new Date().toISOString().split('T')[0]
+                                                                };
+                                                                setEditingTask(taskForEdit);
+                                                                setIsEditModalOpen(true);
+                                                            }}
+                                                            className="flex items-center cursor-pointer"
+                                                        >
+                                                            <Edit2 className="h-4 w-4 mr-2" />
+                                                            Chỉnh sửa
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="flex items-center cursor-pointer text-red-600 hover:text-red-800 focus:text-red-800"
+                                                            onClick={() => {
+                                                                setDeletingTask(task);
+                                                                setIsDeleteModalOpen(true);
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                            Xóa
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {/* Add Task Modal */}
+                <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Thêm nhiệm vụ mới</DialogTitle>
+                            <DialogDescription>
+                                Tạo một nhiệm vụ mới và gán cho một thành viên trong nhóm.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
+                            {/* Tiêu đề nhiệm vụ */}
+                            <div className="space-y-2">
+                                <Label htmlFor="title" className="text-sm font-medium">
+                                    Tiêu đề nhiệm vụ <span className="text-red-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="title" 
+                                    placeholder="Nhập tiêu đề nhiệm vụ"
+                                    className={`w-full ${formErrors.title ? "border-red-500" : ""}`}
+                                    value={newTask.title}
+                                    onChange={(e) => {
+                                        setNewTask({ ...newTask, title: e.target.value });
+                                        // Clear error when user types
+                                        if (formErrors.title && e.target.value.trim() !== '') {
+                                            setFormErrors({...formErrors, title: undefined});
+                                        }
+                                    }}
+                                />
+                                {formErrors.title && (
+                                    <p className="text-red-500 text-xs mt-1">{formErrors.title}</p>
+                                )}
+                            </div>
+
+                            {/* Mô tả nhiệm vụ */}
+                            <div className="space-y-2">
+                                <Label htmlFor="description" className="text-sm font-medium">
+                                    Mô tả chi tiết <span className="text-red-500">*</span>
+                                </Label>
+                                <Textarea 
+                                    id="description" 
+                                    placeholder="Nhập mô tả chi tiết cho nhiệm vụ" 
+                                    className={`w-full min-h-[100px] resize-y ${formErrors.description ? "border-red-500" : ""}`}
+                                    rows={4}
+                                    value={newTask.description}
+                                    onChange={(e) => {
+                                        setNewTask({ ...newTask, description: e.target.value });
+                                        // Clear error when user types
+                                        if (formErrors.description && e.target.value.trim() !== '') {
+                                            setFormErrors({...formErrors, description: undefined});
+                                        }
+                                    }}
+                                />
+                                {formErrors.description && (
+                                    <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>
+                                )}
+                            </div>
+
+                            {/* Thông tin phân công và thời gian */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Người được giao */}
+                                <div className="space-y-2 col-span-1 md:col-span-2">
+                                    <Label htmlFor="assignee" className="text-sm font-medium">
+                                        Người thực hiện <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Select
+                                        value={newTask.assignedToId?.toString() || ""}
+                                        onValueChange={(value) => {
+                                            const assigneeId = parseInt(value, 10);
+                                            const staff = staffList.find(s => s.staffId === assigneeId);
+                                            console.log("Selected staff:", staff);
+                                            setNewTask({
+                                                ...newTask,
+                                                assignedToId: assigneeId
+                                            });
+                                        }}
+                                    >
+                                        <SelectTrigger id="assignee" className="w-full">
+                                            <SelectValue placeholder="Chọn người thực hiện" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectLabel>Người thực hiện</SelectLabel>
+                                                {isStaffLoading ? (
+                                                    <SelectItem value="loading" disabled>
+                                                        Đang tải danh sách...
+                                                    </SelectItem>
+                                                ) : staffList.length > 0 ? (
+                                                    staffList.map(staff => (
+                                                        <SelectItem key={staff.staffId} value={staff.staffId.toString()}>
+                                                            {staff.staffId} - {staff.fullName}
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <SelectItem value="empty" disabled>
+                                                        Không có nhân viên
+                                                    </SelectItem>
+                                                )}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Mức độ ưu tiên */}
+                                <div className="space-y-2 col-span-1">
+                                    <Label htmlFor="priority" className="text-sm font-medium">
+                                        Mức độ ưu tiên
+                                    </Label>
+                                    <Select
+                                        value={newTask.priority}
+                                        onValueChange={(value) => setNewTask({
+                                            ...newTask,
+                                            priority: value as Task['priority']
+                                        })}
+                                    >
+                                        <SelectTrigger id="priority" className="w-full">
+                                            <SelectValue placeholder="Chọn mức độ ưu tiên" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectLabel>Mức độ ưu tiên</SelectLabel>
+                                                <SelectItem key="Low" value="Low">Thấp</SelectItem>
+                                                <SelectItem key="Medium" value="Medium">Trung bình</SelectItem>
+                                                <SelectItem key="High" value="High">Cao</SelectItem>
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Thời gian */}
+                                <div className="space-y-2 col-span-1">
+                                    <Label htmlFor="startDate" className="text-sm font-medium">Ngày bắt đầu</Label>
+                                    <Input
+                                        id="startDate"
+                                        type="date"
+                                        className="w-full"
+                                        value={newTask.startDate}
+                                        onChange={(e) => {
+                                            setNewTask({ ...newTask, startDate: e.target.value });
+                                            if (newTask.endDate) {
+                                                validateDates(e.target.value, newTask.endDate);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-2 col-span-1">
+                                    <Label htmlFor="endDate" className="text-sm font-medium">Ngày kết thúc</Label>
+                                    <Input
+                                        id="endDate"
+                                        type="date"
+                                        className={`w-full ${dateError ? "border-red-500" : ""}`}
+                                        value={newTask.endDate}
+                                        min={newTask.startDate}
+                                        onChange={(e) => {
+                                            setNewTask({ ...newTask, endDate: e.target.value });
+                                            if (newTask.startDate) {
+                                                validateDates(newTask.startDate, e.target.value);
+                                            }
+                                        }}
+                                    />
+                                    {dateError && (
+                                        <p className="text-red-500 text-xs mt-1">{dateError}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsAddModalOpen(false)}
+                                className="mt-2 sm:mt-0"
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                onClick={handleAddTask}
+                                className="mt-2 sm:mt-0"
+                            >
+                                Tạo nhiệm vụ
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Edit Task Dialog */}
+                <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Chỉnh sửa nhiệm vụ</DialogTitle>
+                            <DialogDescription>
+                                Cập nhật thông tin nhiệm vụ
+                            </DialogDescription>
+                        </DialogHeader>
+                        {editingTask && (
+                            <>
+                                {/* Console log placed in useEffect instead of directly in JSX */}
+                                <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
+                                    {/* Tiêu đề nhiệm vụ */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-title" className="text-sm font-medium">
+                                            Tiêu đề nhiệm vụ <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="edit-title"
+                                            className={`w-full ${formErrors.title ? "border-red-500" : ""}`}
+                                            value={editingTask.title}
+                                            onChange={(e) => {
+                                                setEditingTask(prev => {
+                                                    if (!prev) return prev;
+                                                    return {...prev, title: e.target.value};
+                                                });
+                                                // Clear error when user types
+                                                if (formErrors.title && e.target.value.trim() !== '') {
+                                                    setFormErrors({...formErrors, title: undefined});
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.title && (
+                                            <p className="text-red-500 text-xs mt-1">{formErrors.title}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Mô tả nhiệm vụ */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="edit-description" className="text-sm font-medium">
+                                            Mô tả chi tiết <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Textarea
+                                            id="edit-description"
+                                            className={`w-full min-h-[100px] resize-y ${formErrors.description ? "border-red-500" : ""}`}
+                                            rows={4}
+                                            value={editingTask.description}
+                                            onChange={(e) => {
+                                                setEditingTask(prev => {
+                                                    if (!prev) return prev;
+                                                    return {...prev, description: e.target.value};
+                                                });
+                                                // Clear error when user types
+                                                if (formErrors.description && e.target.value.trim() !== '') {
+                                                    setFormErrors({...formErrors, description: undefined});
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.description && (
+                                            <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Thông tin phân công và thời gian */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Người được giao */}
+                                        <div className="space-y-2 col-span-1 md:col-span-2">
+                                            <Label htmlFor="edit-assignee" className="text-sm font-medium">
+                                                Người thực hiện <span className="text-red-500">*</span>
+                                            </Label>
+                                            <Select
+                                                defaultValue={editingTask.assignedToId?.toString() || ""}
+                                                onValueChange={(value) => {
+                                                    const assigneeId = parseInt(value, 10);
+                                                    const staff = staffList.find(s => s.staffId === assigneeId);
+                                                    console.log("Selected staff for edit:", staff);
+                                                    setEditingTask({
+                                                        ...editingTask,
+                                                        assignedToId: assigneeId
+                                                    });
+                                                }}
+                                            >
+                                                <SelectTrigger id="edit-assignee" className="w-full">
+                                                    <SelectValue placeholder="Chọn người thực hiện" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectLabel>Người thực hiện</SelectLabel>
+                                                        {isStaffLoading ? (
+                                                            <SelectItem value="loading" disabled>
+                                                                Đang tải danh sách...
+                                                            </SelectItem>
+                                                        ) : staffList.length > 0 ? (
+                                                            staffList.map(staff => (
+                                                                <SelectItem key={staff.staffId} value={staff.staffId.toString()}>
+                                                                    {staff.staffId} - {staff.fullName}
+                                                                </SelectItem>
+                                                            ))
+                                                        ) : (
+                                                            <SelectItem value="empty" disabled>
+                                                                Không có nhân viên
+                                                            </SelectItem>
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Mức độ ưu tiên */}
+                                        <div className="space-y-2 col-span-1">
+                                            <Label htmlFor="edit-priority" className="text-sm font-medium">
+                                                Mức độ ưu tiên
+                                            </Label>
+                                            <Select
+                                                defaultValue={editingTask.priority}
+                                                onValueChange={(value) => setEditingTask({
+                                                    ...editingTask,
+                                                    priority: value as Task['priority']
+                                                })}
+                                            >
+                                                <SelectTrigger id="edit-priority" className="w-full">
+                                                    <SelectValue placeholder="Chọn mức độ ưu tiên" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectLabel>Mức độ ưu tiên</SelectLabel>
+                                                        <SelectItem key="Low" value="Low">Thấp</SelectItem>
+                                                        <SelectItem key="Medium" value="Medium">Trung bình</SelectItem>
+                                                        <SelectItem key="High" value="High">Cao</SelectItem>
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Thời gian */}
+                                        <div className="space-y-2 col-span-1">
+                                            <Label htmlFor="edit-startDate" className="text-sm font-medium">
+                                                Ngày bắt đầu
+                                            </Label>
+                                            <Input
+                                                id="edit-startDate"
+                                                type="date"
+                                                className="w-full"
+                                                value={formatDateInput(editingTask.startDate)}
+                                                onChange={(e) => {
+                                                    const newDate = e.target.value;
+                                                    console.log("Setting new start date:", newDate);
+                                                    setEditingTask(prev => {
+                                                        if (!prev) return prev;
+                                                        return {
+                                                            ...prev,
+                                                            startDate: newDate
+                                                        };
+                                                    });
+                                                    if (editingTask.endDate) {
+                                                        validateDates(newDate, editingTask.endDate);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="space-y-2 col-span-1">
+                                            <Label htmlFor="edit-endDate" className="text-sm font-medium">
+                                                Ngày kết thúc
+                                            </Label>
+                                            <Input
+                                                id="edit-endDate"
+                                                type="date"
+                                                className={`w-full ${dateError ? "border-red-500" : ""}`}
+                                                value={formatDateInput(editingTask.endDate)}
+                                                min={formatDateInput(editingTask.startDate)}
+                                                onChange={(e) => {
+                                                    const newDate = e.target.value;
+                                                    console.log("Setting new end date:", newDate);
+                                                    setEditingTask(prev => {
+                                                        if (!prev) return prev;
+                                                        return {
+                                                            ...prev,
+                                                            endDate: newDate
+                                                        };
+                                                    });
+                                                    if (editingTask.startDate) {
+                                                        validateDates(editingTask.startDate, newDate);
+                                                    }
+                                                }}
+                                                // Format display as dd/MM/yyyy but keep ISO format for value
+                                                data-date-format="DD/MM/YYYY"
+                                            />
+                                            {dateError && (
+                                                <p className="text-red-500 text-xs mt-1">{dateError}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <DialogFooter className="gap-2 sm:gap-0">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setIsEditModalOpen(false)}
+                                        className="mt-2 sm:mt-0"
+                                    >
+                                        Hủy
+                                    </Button>
+                                    <Button
+                                        onClick={() => handleUpdateTask(editingTask)}
+                                        className="mt-2 sm:mt-0"
+                                    >
+                                        Cập nhật
+                                    </Button>
+                                </DialogFooter>
+                            </>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* View Task Detail Dialog */}
+                <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+                    <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-semibold flex items-center">
+                                Chi tiết nhiệm vụ
+                            </DialogTitle>
+                            <DialogDescription>
+                                Xem thông tin chi tiết về nhiệm vụ
+                            </DialogDescription>
+                        </DialogHeader>
+                        {viewingTask && (
+                            <div className="py-4 space-y-6">
+                                {/* Task title */}
+                                <div className="space-y-2">
+                                    <h3 className="text-lg font-semibold">{viewingTask.title}</h3>
+                                    <div className="flex items-center gap-2">
+                                        {getStatusBadge(viewingTask.status)}
+                                        {getPriorityBadge(viewingTask.priority)}
+                                    </div>
+                                </div>
+                                
+                                {/* Task details in grid layout */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4 bg-gray-50">
+                                    {/* Assigned to */}
+                                    <div className="flex items-start gap-2">
+                                        <User className="h-5 w-5 text-gray-500 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500">Người thực hiện</p>
+                                            <p className="text-sm">{viewingTask.assigneeName || "Chưa phân công"}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Date range */}
+                                    <div className="flex items-start gap-2">
+                                        <CalendarDays className="h-5 w-5 text-gray-500 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500">Thời gian</p>
+                                            <p className="text-sm">
+                                                {formatDate(viewingTask.startDate)} - {formatDate(viewingTask.endDate)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Task ID */}
+                                    <div className="flex items-start gap-2">
+                                        <FileBadge className="h-5 w-5 text-gray-500 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500">Mã nhiệm vụ</p>
+                                            <p className="text-sm font-mono">#{viewingTask.taskEachId}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Description */}
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-medium text-gray-500">Mô tả chi tiết</h4>
+                                    <div className="p-4 border rounded-lg bg-white">
+                                        {viewingTask.description ? (
+                                            <div className="whitespace-pre-wrap text-sm text-gray-700">
+                                                {viewingTask.description}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-400 italic">Không có mô tả chi tiết</p>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                {/* Activity log - Placeholder for future implementation */}
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-medium text-gray-500 flex items-center">
+                                        <CornerDownRight className="h-4 w-4 mr-1" />
+                                        Lịch sử hoạt động
+                                    </h4>
+                                    <div className="p-4 border rounded-lg bg-white text-sm text-gray-400 italic">
+                                        Chức năng này sẽ được cập nhật trong thời gian tới
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <DialogFooter className="sm:justify-between">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsViewModalOpen(false)}
+                            >
+                                Đóng
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    if (viewingTask) {
+                                        // Make sure to format dates correctly when setting the editing task
+                                        const taskForEdit = {
+                                            ...viewingTask,
+                                            startDate: viewingTask.startDate || new Date().toISOString().split('T')[0],
+                                            endDate: viewingTask.endDate || new Date().toISOString().split('T')[0]
+                                        };
+                                        setEditingTask(taskForEdit);
+                                        setIsViewModalOpen(false);
+                                        setIsEditModalOpen(true);
+                                    }
+                                }}
+                            >
+                                <Edit2 className="h-4 w-4 mr-2" />
+                                Chỉnh sửa
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Task Confirmation Dialog */}
+                <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-semibold flex items-center text-red-600">
+                                <Trash2 className="h-5 w-5 mr-2" />
+                                Xác nhận xóa nhiệm vụ
+                            </DialogTitle>
+                            <DialogDescription>
+                                Bạn có chắc chắn muốn xóa nhiệm vụ này? Hành động này không thể hoàn tác.
+                            </DialogDescription>
+                        </DialogHeader>
+                        {deletingTask && (
+                            <div className="py-4">
+                                <div className="p-4 border rounded-lg bg-gray-50 mb-4">
+                                    <h3 className="font-medium">{deletingTask.title}</h3>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        {getStatusBadge(deletingTask.status)}
+                                        <span className="text-sm text-gray-500">•</span>
+                                        <span className="text-sm text-gray-500">
+                                            #{deletingTask.taskEachId}
+                                        </span>
+                                    </div>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    Xóa nhiệm vụ sẽ xóa tất cả thông tin liên quan đến nhiệm vụ này.
+                                </p>
+                            </div>
+                        )}
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                disabled={isDeleting}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={() => deletingTask && handleDeleteTask(Number(deletingTask.taskEachId))}
+                                disabled={isDeleting}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em]"></div>
+                                        Đang xóa...
+                                    </>
+                                ) : (
+                                    "Xác nhận xóa"
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
     );
 }

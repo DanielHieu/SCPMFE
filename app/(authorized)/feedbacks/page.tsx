@@ -35,6 +35,7 @@ import useDebounce from "@/hooks/useDebounce";
 import { fetchApi } from "@/lib/api/api-helper";
 import { Feedback, FeedbackStatus } from "@/types/feedback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
 
 // Function to get status style and label
 const getStatusStyle = (status: string) => {
@@ -278,311 +279,324 @@ const FeedbackPage = () => {
     };
 
     return (
-        <div className="container mx-auto py-6 space-y-4 md:space-y-6">
-            {/* Header & Breadcrumbs */}
-            <Breadcrumb
-                items={[
-                    { label: "Trang chủ", href: "/dashboard" },
-                    { label: "Quản lý đánh giá" }
-                ]}
-            />
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800 px-1">
-                Quản lý đánh giá của khách hàng
-            </h1>
+        <>
+            <div className="container mx-auto py-6 space-y-6">
+                <Breadcrumb
+                    items={[
+                        { label: "Trang chủ", href: "/dashboard" },
+                        { label: "Quản lý đánh giá" }
+                    ]}
+                />
 
-            {/* Filters and Actions Bar */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 px-1">
-                {/* Search */}
-                <div className="w-full md:w-auto md:flex-grow lg:max-w-md relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                        placeholder="Tìm kiếm theo tên/email/số điện thoại..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="max-w-xs h-9 pl-9"
-                    />
-                </div>
-            </div>
-            {/* Tab Filters */}
-            <Tabs
-                defaultValue="all"
-                value={filterStatus}
-                onValueChange={(value) => setFilterStatus(value as FilterStatus)}
-                className="w-full"
-            >
-                <TabsList className="mb-4">
-                    <TabsTrigger value="all">
-                        Tất cả đánh giá ({counts.all})
-                    </TabsTrigger>
-                    <TabsTrigger value="new">
-                        Mới ({counts.new})
-                    </TabsTrigger>
-                    <TabsTrigger value="viewed">
-                        Đã xem ({counts.viewed})
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent value={filterStatus}>
-                    {/* Table Area */}
-                    <div className="mt-4 rounded-lg overflow-hidden border border-gray-200 bg-white">
-                        {isLoading && <div className="p-6 text-center">Đang tải dữ liệu đánh giá...</div>}
+                {/* Unified container with white background */}
+                <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                    {/* Header section */}
+                    <div className="px-6 py-4 border-b border-gray-200">
+                        <h1 className="text-3xl font-bold tracking-tight">
+                            Quản lý đánh giá của khách hàng
+                        </h1>
+                    </div>
+
+                    {/* Search section */}
+                    <div className="px-6 pt-4 pb-2 border-b border-gray-200">
+                        <div className="relative w-full max-w-md">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Tìm kiếm theo tên/email/số điện thoại..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="h-10 pl-9 pr-4 w-full"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Gmail-style tabs - directly above the table with no gap */}
+                    <div className="border-b border-gray-200">
+                        <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
+                            <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
+                                <TabsTrigger
+                                    value="All"
+                                    className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                                >
+                                    Tất cả đánh giá ({counts.all})
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="New"
+                                    className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                                >
+                                    Mới ({counts.new})
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="Viewed"
+                                    className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                                >
+                                    Đã xem ({counts.viewed})
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="Responsed"
+                                    className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                                >
+                                    Đã phản hồi ({counts.responsed})
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    </div>
+
+                    {/* Table area - no padding to connect directly with tabs */}
+                    <div className="pb-0">
+                        {isLoading && (
+                            <div className="p-8 text-center">
+                                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
+                                <p className="mt-2 text-gray-500">Đang tải dữ liệu đánh giá...</p>
+                            </div>
+                        )}
                         {error && (
-                            <div className="p-6 text-center text-red-500">Lỗi: {error}</div>
+                            <div className="p-8 text-center">
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
+                                    <span className="text-red-500 text-xl">!</span>
+                                </div>
+                                <p className="text-red-500">Lỗi: {error}</p>
+                            </div>
                         )}
                         {!isLoading && !error && (
-                            <>
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="whitespace-nowrap">Khách hàng</TableHead>
-                                                <TableHead className="whitespace-nowrap">Nội dung</TableHead>
-                                                <TableHead className="whitespace-nowrap">Trạng thái</TableHead>
-                                                <TableHead className="whitespace-nowrap">Ngày tạo</TableHead>
-                                                <TableHead className="whitespace-nowrap">Phản hồi</TableHead>
-                                                <TableHead className="text-right">Thao tác</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {feedbacks.length > 0 ? (
-                                                feedbacks.map((feedback) => (
-                                                    <TableRow key={feedback.feedbackId}>
-                                                        <TableCell>
-                                                            <div className="font-medium">{feedback.customerName}</div>
-                                                            <div className="text-sm text-gray-500">{feedback.customerEmail}</div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <div className="max-w-xs truncate">
-                                                                {feedback.content.length > 100
-                                                                    ? `${feedback.content.substring(0, 100)}...`
-                                                                    : feedback.content}
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Badge className={getStatusStyle(feedback.status).color}>
-                                                                {getStatusStyle(feedback.status).label}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="whitespace-nowrap">
-                                                            {formatDate(feedback.createdAt)}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {feedback.status === "Responsed" ? (
-                                                                <span className="text-sm text-green-600">Đã phản hồi</span>
-                                                            ) : (
-                                                                <span className="text-sm text-gray-500">Chưa phản hồi</span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-full">
-                                                                        <span className="sr-only">Mở menu</span>
-                                                                        <MoreHorizontal className="h-4 w-4" />
-                                                                    </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="w-40 rounded-md shadow-md">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="whitespace-nowrap">Khách hàng</TableHead>
+                                            <TableHead className="whitespace-nowrap">Nội dung</TableHead>
+                                            <TableHead className="whitespace-nowrap">Trạng thái</TableHead>
+                                            <TableHead className="whitespace-nowrap">Ngày tạo</TableHead>
+                                            <TableHead className="whitespace-nowrap">Phản hồi</TableHead>
+                                            <TableHead className="text-right">Thao tác</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {feedbacks.length > 0 ? (
+                                            feedbacks.map((feedback) => (
+                                                <TableRow key={feedback.feedbackId}>
+                                                    <TableCell>
+                                                        <div className="font-medium">{feedback.customerName}</div>
+                                                        <div className="text-sm text-gray-500">{feedback.customerEmail}</div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="max-w-xs truncate">
+                                                            {feedback.content.length > 100
+                                                                ? `${feedback.content.substring(0, 100)}...`
+                                                                : feedback.content}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge className={getStatusStyle(feedback.status).color}>
+                                                            {getStatusStyle(feedback.status).label}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-nowrap">
+                                                        {formatDate(feedback.createdAt)}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {feedback.status === "Responsed" ? (
+                                                            <span className="text-sm text-green-600">Đã phản hồi</span>
+                                                        ) : (
+                                                            <span className="text-sm text-gray-500">Chưa phản hồi</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-full">
+                                                                    <span className="sr-only">Mở menu</span>
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-40 rounded-md shadow-md">
+                                                                <DropdownMenuItem
+                                                                    className="cursor-pointer hover:bg-slate-50"
+                                                                    onClick={() => handleViewDetails(feedback)}
+                                                                >
+                                                                    <Eye className="mr-2 h-4 w-4 text-slate-500" />
+                                                                    Xem chi tiết
+                                                                </DropdownMenuItem>
+                                                                {feedback.status === "New" && (
                                                                     <DropdownMenuItem
                                                                         className="cursor-pointer hover:bg-slate-50"
-                                                                        onClick={() => handleViewDetails(feedback)}
+                                                                        onClick={() => handleMarkAsRead(feedback.feedbackId)}
                                                                     >
-                                                                        <Eye className="mr-2 h-4 w-4 text-slate-500" />
-                                                                        Xem chi tiết
+                                                                        <svg className="mr-2 h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 16a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm1-5.15c0 .34-.28.61-.62.61h-.76c-.34 0-.62-.27-.62-.61V8.85c0-.34.28-.61.62-.61h.76c.34 0 .62.27.62.61z" />
+                                                                        </svg>
+                                                                        Đánh dấu đã đọc
                                                                     </DropdownMenuItem>
-                                                                    {feedback.status === "new" && (
-                                                                        <DropdownMenuItem
-                                                                            className="cursor-pointer hover:bg-slate-50"
-                                                                            onClick={() => handleMarkAsRead(feedback.feedbackId)}
-                                                                        >
-                                                                            <svg className="mr-2 h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 16a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm1-5.15c0 .34-.28.61-.62.61h-.76c-.34 0-.62-.27-.62-.61V8.85c0-.34.28-.61.62-.61h.76c.34 0 .62.27.62.61z" />
-                                                                            </svg>
-                                                                            Đánh dấu đã đọc
-                                                                        </DropdownMenuItem>
-                                                                    )}
+                                                                )}
+                                                                {(feedback.status === "New" || feedback.status === "Viewed") && (
                                                                     <DropdownMenuItem
                                                                         className="cursor-pointer hover:bg-slate-50"
                                                                         onClick={() => handleOpenReplyModal(feedback)}
                                                                     >
                                                                         <MessageSquare className="mr-2 h-4 w-4 text-slate-500" />
-                                                                        {feedback.status === "Responsed" ? "Xem" : "Phản hồi"}
+                                                                        Phản hồi
                                                                     </DropdownMenuItem>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={6} className="h-24 text-center">
-                                                        Không tìm thấy đánh giá nào.
+                                                                )}
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
                                                     </TableCell>
                                                 </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-
-                                {/* Pagination Controls */}
-                                <div className="flex items-center justify-between space-x-2 p-4 border-t">
-                                    <div className="text-sm text-muted-foreground">
-                                        {totalItems > 0 ? (
-                                            `Hiển thị ${startItem}-${endItem} trong số ${totalItems} đánh giá`
+                                            ))
                                         ) : (
-                                            "Không có đánh giá nào"
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                                                    Không tìm thấy đánh giá nào
+                                                </TableCell>
+                                            </TableRow>
                                         )}
-                                    </div>
-                                    <div className="space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            disabled={currentPage <= 1}
-                                        >
-                                            Trước
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                            disabled={currentPage >= totalPages}
-                                        >
-                                            Tiếp
-                                        </Button>
-                                    </div>
-                                </div>
-                            </>
+                                    </TableBody>
+                                </Table>
+                            </div>
                         )}
                     </div>
-                </TabsContent>
-            </Tabs>
 
-            {/* Feedback Detail Modal */}
-            <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>Chi tiết đánh giá</DialogTitle>
-                    </DialogHeader>
-                    {selectedFeedback && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                    {/* Pagination */}
+                    {!isLoading && !error && totalPages > 0 && (
+                        <div className="flex items-center justify-between px-6 py-3 border-t">
+                            <div className="text-sm text-gray-500">
+                                Hiển thị {startItem}-{endItem} trong số {totalItems} đánh giá
+                            </div>
+                            <div className="space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="border-gray-200 text-gray-600"
+                                >
+                                    Trước
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="border-gray-200 text-gray-600"
+                                >
+                                    Tiếp
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Feedback Detail Modal */}
+                <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle>Chi tiết đánh giá</DialogTitle>
+                        </DialogHeader>
+                        {selectedFeedback && (
+                            <div className="space-y-4">
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Thông tin khách hàng</h3>
+                                    <p className="font-medium mt-1">{selectedFeedback.customerName}</p>
+                                    <p className="text-sm text-gray-500">{selectedFeedback.customerEmail}</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Nội dung đánh giá</h3>
+                                    <div className="bg-gray-50 p-3 rounded-md mt-1 text-sm">
+                                        {selectedFeedback.content}
+                                    </div>
+                                </div>
+                                <div className="flex justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-500">Ngày tạo</h3>
+                                        <p className="text-sm mt-1">{formatDate(selectedFeedback.createdAt)}</p>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-500">Trạng thái</h3>
+                                        <Badge className={`mt-1 ${getStatusStyle(selectedFeedback.status).color}`}>
+                                            {getStatusStyle(selectedFeedback.status).label}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                {selectedFeedback.status === "Responsed" && (
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-500">Phản hồi</h3>
+                                        <div className="bg-blue-50 p-3 rounded-md mt-1 text-sm">
+                                            {selectedFeedback.responsedContent}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Đã phản hồi lúc: {formatDate(selectedFeedback.responsedAt || "")}
+                                        </p>
+                                    </div>
+                                )}
+                                <DialogFooter className="mt-6">
+                                    {(selectedFeedback.status === "New" || selectedFeedback.status === "Viewed") && (
+                                        <Button
+                                            onClick={() => {
+                                                setIsDetailModalOpen(false);
+                                                handleOpenReplyModal(selectedFeedback);
+                                            }}
+                                            className="mr-2"
+                                        >
+                                            Phản hồi
+                                        </Button>
+                                    )}
+                                    <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
+                                        Đóng
+                                    </Button>
+                                </DialogFooter>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* Reply Modal */}
+                <Dialog open={isReplyModalOpen} onOpenChange={setIsReplyModalOpen}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle>Phản hồi đánh giá</DialogTitle>
+                        </DialogHeader>
+                        {selectedFeedback && (
+                            <div className="space-y-4">
                                 <div>
                                     <h3 className="text-sm font-medium text-gray-500">Khách hàng</h3>
-                                    <p className="mt-1">{selectedFeedback.customerName}</p>
+                                    <p className="font-medium mt-1">{selectedFeedback.customerName}</p>
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Email</h3>
-                                    <p className="mt-1">{selectedFeedback.customerEmail}</p>
+                                    <h3 className="text-sm font-medium text-gray-500">Nội dung đánh giá</h3>
+                                    <div className="bg-gray-50 p-3 rounded-md mt-1 text-sm">
+                                        {selectedFeedback.content}
+                                    </div>
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Ngày tạo</h3>
-                                    <p className="mt-1">{formatDate(selectedFeedback.createdAt)}</p>
+                                    <Label htmlFor="reply-content">Nội dung phản hồi</Label>
+                                    <Textarea
+                                        id="reply-content"
+                                        placeholder="Nhập nội dung phản hồi..."
+                                        value={replyContent}
+                                        onChange={(e) => setReplyContent(e.target.value)}
+                                        className="mt-1 min-h-[100px]"
+                                    />
                                 </div>
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Trạng thái</h3>
-                                    <Badge className={`mt-1 ${getStatusStyle(selectedFeedback.status).color}`}>
-                                        {getStatusStyle(selectedFeedback.status).label}
-                                    </Badge>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-500">Nội dung đánh giá</h3>
-                                <p className="mt-1 whitespace-pre-wrap">{selectedFeedback.content}</p>
-                            </div>
-
-                            {selectedFeedback.status === "Responsed" && (
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-500">Phản hồi của bạn</h3>
-                                    <p className="mt-1 whitespace-pre-wrap">{selectedFeedback.responsedContent}</p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Đã phản hồi vào: {formatDate(selectedFeedback.responsedAt)}
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="flex justify-end space-x-2 pt-4">
-                                {selectedFeedback.status === "new" && (
+                                <DialogFooter className="mt-6">
                                     <Button
                                         variant="outline"
-                                        onClick={() => {
-                                            handleMarkAsRead(selectedFeedback.feedbackId);
-                                            setIsDetailModalOpen(false);
-                                        }}
+                                        onClick={() => setIsReplyModalOpen(false)}
+                                        disabled={isSubmittingReply}
                                     >
-                                        Đánh dấu đã đọc
+                                        Hủy
                                     </Button>
-                                )}
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        setIsDetailModalOpen(false);
-                                        handleOpenReplyModal(selectedFeedback);
-                                    }}
-                                >
-                                    {selectedFeedback.status === "Responsed" ? "Xem/Sửa phản hồi" : "Phản hồi"}
-                                </Button>
-                                <Button
-                                    onClick={() => setIsDetailModalOpen(false)}
-                                >
-                                    Đóng
-                                </Button>
+                                    <Button
+                                        onClick={handleSubmitReply}
+                                        disabled={!replyContent.trim() || isSubmittingReply}
+                                    >
+                                        {isSubmittingReply ? "Đang gửi..." : "Gửi phản hồi"}
+                                    </Button>
+                                </DialogFooter>
                             </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
-
-            {/* Reply Modal */}
-            <Dialog open={isReplyModalOpen} onOpenChange={setIsReplyModalOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {selectedFeedback?.status === "Responsed"
-                                ? "Chỉnh sửa phản hồi"
-                                : "Phản hồi đánh giá"}
-                        </DialogTitle>
-                    </DialogHeader>
-                    {selectedFeedback && (
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-500">Khách hàng</h3>
-                                <p className="mt-1">{selectedFeedback.customerName}</p>
-                            </div>
-
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-500">Nội dung đánh giá</h3>
-                                <p className="mt-1 whitespace-pre-wrap">{selectedFeedback.content}</p>
-                            </div>
-
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-500">Phản hồi của bạn</h3>
-                                <Textarea
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    placeholder="Nhập nội dung phản hồi..."
-                                    className="mt-1"
-                                    rows={5}
-                                />
-                            </div>
-                            <DialogFooter>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsReplyModalOpen(false)}
-                                >
-                                    Hủy
-                                </Button>
-                                <Button
-                                    onClick={handleSubmitReply}
-                                    disabled={!replyContent.trim() || isSubmittingReply}
-                                >
-                                    {isSubmittingReply ? "Đang gửi..." : "Gửi phản hồi"}
-                                </Button>
-                            </DialogFooter>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
-        </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </>
     );
 }
 

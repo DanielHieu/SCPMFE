@@ -26,21 +26,30 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import useDebounce from "@/hooks/useDebounce";
-import { PlusCircle, Search, Car, AreaChart, Building, DollarSign, Banknote, Plus } from "lucide-react";
+import { Search, Car, Banknote, Plus } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Toaster, toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+type FilterStatus = "all" | "active" | "inactive";
+
+// Extending ParkingLot type for this component
+interface ExtendedParkingLot extends ParkingLot {
+  isActive?: boolean;
+}
 
 export default function ParkingLotsPage() {
-  const [parkingLots, setParkingLots] = useState<ParkingLot[]>([]);
+  const [parkingLots, setParkingLots] = useState<ExtendedParkingLot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingLot, setEditingLot] = useState<ParkingLot | null>(null);
+  const [editingLot, setEditingLot] = useState<ExtendedParkingLot | null>(null);
 
   // Fetch Data
   const fetchLots = useCallback(async (term: string | null) => {
@@ -48,7 +57,12 @@ export default function ParkingLotsPage() {
     setError(null);
     try {
       const data = await searchParkingLots(term);
-      setParkingLots(Array.isArray(data) ? data : []);
+      // Add isActive property to all parking lots
+      const extendedData = Array.isArray(data) ? data.map(lot => ({
+        ...lot,
+        isActive: true // Set all to active for now, adjust based on your business logic
+      })) : [];
+      setParkingLots(extendedData);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load parking lots",
@@ -82,7 +96,7 @@ export default function ParkingLotsPage() {
     }
   };
 
-  const handleEditClick = (lot: ParkingLot) => {
+  const handleEditClick = (lot: ExtendedParkingLot) => {
     setEditingLot(lot);
     setIsEditModalOpen(true);
   };
@@ -138,43 +152,34 @@ export default function ParkingLotsPage() {
     ? parkingLots.reduce((sum, lot) => sum + (lot.pricePerMonth || 0), 0) / parkingLots.length
     : 0;
 
+  // Filter parking lots based on status
+  const filteredParkingLots = React.useMemo(() => {
+    if (filterStatus === "active") {
+      return parkingLots.filter(lot => lot.isActive === true);
+    }
+    if (filterStatus === "inactive") {
+      return parkingLots.filter(lot => lot.isActive === false);
+    }
+    return parkingLots;
+  }, [parkingLots, filterStatus]);
+
+  // Calculate counts
+  const counts = React.useMemo(() => ({
+    all: parkingLots.length,
+    active: parkingLots.filter(lot => lot.isActive === true).length,
+    inactive: parkingLots.filter(lot => lot.isActive === false).length,
+  }), [parkingLots]);
+
   return (
     <>
       <Toaster />
-      <div className="container mx-auto py-8 space-y-6">
-        {/* Header Section */}
-        <div className="flex flex-col space-y-2">
-          <Breadcrumb
-            items={[
-              { label: "Trang chủ", href: "/dashboard" },
-              { label: "Quản lý bãi đỗ xe" }
-            ]}
-          />
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">Quản lý bãi đỗ xe</h1>
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Thêm bãi đỗ xe
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Thêm bãi đỗ xe mới</DialogTitle>
-                  <DialogDescription>
-                    Thêm thông tin bãi đỗ xe mới vào hệ thống
-                  </DialogDescription>
-                </DialogHeader>
-                <ParkingLotForm
-                  onSubmitAction={handleAddSubmit}
-                  onCancelAction={() => setIsAddModalOpen(false)}
-                  key="add-lot"
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+      <div className="container mx-auto py-6 space-y-6">
+        <Breadcrumb
+          items={[
+            { label: "Trang chủ", href: "/dashboard" },
+            { label: "Quản lý bãi đỗ xe" }
+          ]}
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -224,106 +229,115 @@ export default function ParkingLotsPage() {
           </Card>
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Tìm kiếm theo địa chỉ..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-10 pl-9 pr-4 w-full"
-            />
+        {/* Unified container with white background */}
+        <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+          {/* Header section with Add Button */}
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Quản lý bãi đỗ xe
+            </h1>
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Thêm bãi đỗ xe
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Thêm bãi đỗ xe mới</DialogTitle>
+                  <DialogDescription>
+                    Thêm thông tin bãi đỗ xe mới vào hệ thống
+                  </DialogDescription>
+                </DialogHeader>
+                <ParkingLotForm
+                  onSubmitAction={handleAddSubmit}
+                  onCancelAction={() => setIsAddModalOpen(false)}
+                  key="add-lot"
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Search section */}
+          <div className="px-6 pt-4 pb-2 border-b border-gray-200">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Tìm kiếm bãi đỗ xe..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-10 pl-9 pr-4 w-full"
+              />
+            </div>
+          </div>
+
+          {/* Gmail-style tabs - directly above the table with no gap */}
+          <div className="border-b border-gray-200">
+            <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
+              <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
+                <TabsTrigger 
+                  value="all" 
+                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                >
+                  Tất cả ({counts.all})
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="active" 
+                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                >
+                  Đang hoạt động ({counts.active})
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="inactive" 
+                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                >
+                  Không hoạt động ({counts.inactive})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Table area - no padding to connect directly with tabs */}
+          <div className="pb-0">
+            {isLoading && (
+              <div className="p-8 text-center">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
+                <p className="mt-2 text-gray-500">Đang tải dữ liệu bãi đỗ xe...</p>
+              </div>
+            )}
+            {error && (
+              <div className="p-8 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-3">
+                  <span className="text-red-500 text-xl">!</span>
+                </div>
+                <p className="text-red-500">Lỗi: {error}</p>
+              </div>
+            )}
+            {!isLoading && !error && (
+              <ParkingLotsTable
+                lots={filteredParkingLots}
+                onEditAction={handleEditClick}
+                onDeleteAction={handleDeleteClick}
+              />
+            )}
           </div>
         </div>
 
-        {/* Data Display Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {isLoading && (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-8 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-red-800 mb-2">Không thể tải dữ liệu</h3>
-              <p className="text-red-600">{error}</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => fetchLots(debouncedSearchTerm)}
-              >
-                Thử lại
-              </Button>
-            </div>
-          )}
-
-          {!isLoading && !error && parkingLots.length === 0 && (
-            <div className="p-8 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                <Car className="h-8 w-8 text-gray-500" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-800 mb-2">Không tìm thấy bãi đỗ xe nào</h3>
-              <p className="text-gray-500 max-w-md mx-auto">
-                {searchTerm ? `Không tìm thấy bãi đỗ xe nào phù hợp với từ khóa "${searchTerm}"` : "Chưa có bãi đỗ xe nào trong hệ thống. Hãy tạo bãi đỗ xe đầu tiên!"}
-              </p>
-              {searchTerm && (
-                <Button
-                  variant="outline"
-                  className="mt-4 mr-2"
-                  onClick={() => setSearchTerm("")}
-                >
-                  Xóa bộ lọc
-                </Button>
-              )}
-              <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                <DialogTrigger asChild>
-                  <Button className="mt-4">
-                    <PlusCircle className="w-4 h-4 mr-2" /> Thêm bãi đỗ xe
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-            </div>
-          )}
-
-          {!isLoading && !error && parkingLots.length > 0 && (
-            <ParkingLotsTable
-              lots={parkingLots}
-              onEditAction={handleEditClick}
-              onDeleteAction={handleDeleteClick}
-            />
-          )}
-        </div>
-
-        {/* Edit Modal */}
-        <Dialog
-          open={isEditModalOpen}
-          onOpenChange={(open) => {
-            if (!open) setEditingLot(null);
-            setIsEditModalOpen(open);
-          }}
-        >
+        {/* Edit dialog */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Chỉnh sửa thông tin bãi đỗ xe</DialogTitle>
+              <DialogTitle>Chỉnh sửa bãi đỗ xe</DialogTitle>
               <DialogDescription>
-                Cập nhật thông tin chi tiết của bãi đỗ xe
+                Thay đổi thông tin bãi đỗ xe
               </DialogDescription>
             </DialogHeader>
             {editingLot && (
               <ParkingLotForm
-                onSubmitAction={handleUpdateSubmit}
                 initialData={editingLot}
-                onCancelAction={() => {
-                  setIsEditModalOpen(false);
-                  setEditingLot(null);
-                }}
+                onSubmitAction={handleUpdateSubmit}
+                onCancelAction={() => setIsEditModalOpen(false)}
                 key={`edit-lot-${editingLot.parkingLotId}`}
               />
             )}
