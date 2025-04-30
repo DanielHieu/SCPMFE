@@ -110,22 +110,7 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile" className="cursor-pointer">
-                    <Avatar className="h-4 w-4 mr-2">
-                      <AvatarFallback className="bg-blue-500 text-[10px] text-white">
-                        {session.user.name?.charAt(0).toUpperCase() || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>Hồ sơ cá nhân</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="hidden md:flex">
-                  <Link href="/settings" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Cài đặt</span>
-                  </Link>
-                </DropdownMenuItem>
+              
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleSignOut}

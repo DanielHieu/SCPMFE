@@ -26,13 +26,31 @@ import { CustomerFeedbackList } from "@/components/customers/CustomerFeedbackLis
 // Import UI Components
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, Info, RefreshCw, ArrowLeft, Car as CarIcon, FileText, MessageSquare, Calendar, User, MapPin } from "lucide-react";
+import { Mail, Phone, Info, RefreshCw, ArrowLeft, Car as CarIcon, FileText, MessageSquare } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+
+// Thêm hàm helper để xử lý URL hình ảnh
+const getImageUrl = (thumbnailPath: string | null | undefined) => {
+  if (!thumbnailPath) return null;
+
+  // Kiểm tra nếu là URL đầy đủ
+  if (thumbnailPath.startsWith('http://') || thumbnailPath.startsWith('https://')) {
+    return thumbnailPath;
+  }
+
+  // Nếu là đường dẫn tương đối, thêm domain API
+  if (thumbnailPath.startsWith('/')) {
+    return `${process.env.NEXT_PUBLIC_API_URL || 'https://api.example.com'}${thumbnailPath}`;
+  }
+
+  // Trường hợp khác, giả định là đường dẫn tương đối
+  return `${process.env.NEXT_PUBLIC_API_URL || 'https://api.example.com'}/${thumbnailPath}`;
+};
 
 export default function CustomerDetailPage() {
   // Hooks
@@ -131,6 +149,17 @@ export default function CustomerDetailPage() {
     },
     [customerId],
   );
+
+  // Thêm logging để debug trong useEffect
+  useEffect(() => {
+    if (vehiclesData && vehiclesData.length > 0) {
+      console.log("Vehicles data thumbnails:", vehiclesData.map(v => ({
+        carId: v.carId,
+        thumbnail: v.thumbnail,
+        processedUrl: getImageUrl(v.thumbnail)
+      })));
+    }
+  }, [vehiclesData]);
 
   // Fetch data on initial component mount
   useEffect(() => {
@@ -456,10 +485,21 @@ export default function CustomerDetailPage() {
                                 <div className="relative h-36 w-full bg-gray-100">
                                   {vehicle.thumbnail ? (
                                     <Image
-                                      src={vehicle.thumbnail}
+                                      src={getImageUrl(vehicle.thumbnail) || ''}
                                       alt={`${vehicle.brand} ${vehicle.model}`}
                                       fill
+                                      sizes="(max-width: 768px) 100vw, 50vw"
                                       className="object-cover"
+                                      onError={(e) => {
+                                        console.error(`Error loading image for car ${vehicle.carId}:`, e);
+                                        // Fallback khi lỗi tải hình ảnh
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.parentElement!.innerHTML = `
+                                          <div class="flex items-center justify-center h-full w-full bg-gray-200">
+                                            <span class="text-gray-400">Không thể tải hình ảnh</span>
+                                          </div>
+                                        `;
+                                      }}
                                     />
                                   ) : (
                                     <div className="flex items-center justify-center h-full w-full bg-gray-200">
@@ -503,7 +543,6 @@ export default function CustomerDetailPage() {
                       </div>
                     </div>
                   </TabsContent>
-
                   <TabsContent value="contracts" className="mt-0">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -537,10 +576,21 @@ export default function CustomerDetailPage() {
                               <div className="relative h-48 w-full bg-gray-100">
                                 {vehicle.thumbnail ? (
                                   <Image
-                                    src={vehicle.thumbnail}
+                                    src={getImageUrl(vehicle.thumbnail) || ''}
                                     alt={`${vehicle.brand} ${vehicle.model}`}
                                     fill
+                                    sizes="(max-width: 768px) 100vw, 50vw"
                                     className="object-cover"
+                                    onError={(e) => {
+                                      console.error(`Error loading image for car ${vehicle.carId}:`, e);
+                                      // Fallback khi lỗi tải hình ảnh
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement!.innerHTML = `
+                                        <div class="flex items-center justify-center h-full w-full bg-gray-200">
+                                          <span class="text-gray-400">Không thể tải hình ảnh</span>
+                                        </div>
+                                      `;
+                                    }}
                                   />
                                 ) : (
                                   <div className="flex items-center justify-center h-full w-full bg-gray-200">

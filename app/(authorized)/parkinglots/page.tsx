@@ -30,26 +30,17 @@ import { Search, Car, Banknote, Plus } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Toaster, toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-type FilterStatus = "all" | "active" | "inactive";
-
-// Extending ParkingLot type for this component
-interface ExtendedParkingLot extends ParkingLot {
-  isActive?: boolean;
-}
 
 export default function ParkingLotsPage() {
-  const [parkingLots, setParkingLots] = useState<ExtendedParkingLot[]>([]);
+  const [parkingLots, setParkingLots] = useState<ParkingLot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingLot, setEditingLot] = useState<ExtendedParkingLot | null>(null);
+  const [editingLot, setEditingLot] = useState<ParkingLot | null>(null);
 
   // Fetch Data
   const fetchLots = useCallback(async (term: string | null) => {
@@ -57,12 +48,7 @@ export default function ParkingLotsPage() {
     setError(null);
     try {
       const data = await searchParkingLots(term);
-      // Add isActive property to all parking lots
-      const extendedData = Array.isArray(data) ? data.map(lot => ({
-        ...lot,
-        isActive: true // Set all to active for now, adjust based on your business logic
-      })) : [];
-      setParkingLots(extendedData);
+      setParkingLots(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load parking lots",
@@ -96,7 +82,7 @@ export default function ParkingLotsPage() {
     }
   };
 
-  const handleEditClick = (lot: ExtendedParkingLot) => {
+  const handleEditClick = (lot: ParkingLot) => {
     setEditingLot(lot);
     setIsEditModalOpen(true);
   };
@@ -151,24 +137,6 @@ export default function ParkingLotsPage() {
   const averagePricePerMonth = parkingLots.length
     ? parkingLots.reduce((sum, lot) => sum + (lot.pricePerMonth || 0), 0) / parkingLots.length
     : 0;
-
-  // Filter parking lots based on status
-  const filteredParkingLots = React.useMemo(() => {
-    if (filterStatus === "active") {
-      return parkingLots.filter(lot => lot.isActive === true);
-    }
-    if (filterStatus === "inactive") {
-      return parkingLots.filter(lot => lot.isActive === false);
-    }
-    return parkingLots;
-  }, [parkingLots, filterStatus]);
-
-  // Calculate counts
-  const counts = React.useMemo(() => ({
-    all: parkingLots.length,
-    active: parkingLots.filter(lot => lot.isActive === true).length,
-    inactive: parkingLots.filter(lot => lot.isActive === false).length,
-  }), [parkingLots]);
 
   return (
     <>
@@ -272,33 +240,7 @@ export default function ParkingLotsPage() {
             </div>
           </div>
 
-          {/* Gmail-style tabs - directly above the table with no gap */}
-          <div className="border-b border-gray-200">
-            <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
-              <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
-                <TabsTrigger 
-                  value="all" 
-                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
-                >
-                  Tất cả ({counts.all})
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="active" 
-                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
-                >
-                  Đang hoạt động ({counts.active})
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="inactive" 
-                  className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
-                >
-                  Không hoạt động ({counts.inactive})
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          {/* Table area - no padding to connect directly with tabs */}
+          {/* Table area */}
           <div className="pb-0">
             {isLoading && (
               <div className="p-8 text-center">
@@ -316,7 +258,7 @@ export default function ParkingLotsPage() {
             )}
             {!isLoading && !error && (
               <ParkingLotsTable
-                lots={filteredParkingLots}
+                lots={parkingLots}
                 onEditAction={handleEditClick}
                 onDeleteAction={handleDeleteClick}
               />

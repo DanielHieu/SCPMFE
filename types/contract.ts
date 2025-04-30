@@ -21,7 +21,7 @@ export interface Contract {
     customerName: string;
     customerId: string;
   };
-  createdDate: string;
+  createdDateString: string;
   updatedDate: string;
   startDateString: string;
   endDateString: string;

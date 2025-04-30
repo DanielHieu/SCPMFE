@@ -142,9 +142,11 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
 
     function handleReject(paymentContractId: number): void {
         const reason = prompt("Vui lòng nhập lý do từ chối:");
+
         if (reason === null) return; // User cancelled the dialog
 
         console.log("handleReject", paymentContractId, reason);
+
         fetchApi(`/Contract/Reject/${paymentContractId}`, {
             method: "POST",
             headers: {
@@ -203,7 +205,7 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Ngày tạo</p>
-                                <p className="mt-1">{contract.createdDate}</p>
+                                <p className="mt-1">{contract.createdDateString}</p>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Ngày bắt đầu</p>

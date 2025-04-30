@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
 import { useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
-import { Eye, Link } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchApi } from "@/lib/api/api-helper";
 
@@ -33,11 +33,10 @@ const ContractFutureExpired = () => {
         getContracts();
     }, []);
 
-
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Hợp đồng sắp hết hạn</CardTitle>
+                <CardTitle>Hợp đồng đang hiệu lực</CardTitle>
             </CardHeader>
             <CardContent>
                 {isLoading ? (
@@ -46,7 +45,7 @@ const ContractFutureExpired = () => {
                     </div>
                 ) : contracts.length === 0 ? (
                     <div className="h-[400px] flex items-center justify-center border rounded-md">
-                        <p className="text-muted-foreground">Không có hợp đồng nào sắp hết hạn</p>
+                        <p className="text-muted-foreground">Không có hợp đồng nào</p>
                     </div>
                 ) : (
                     <div className="rounded-md border">
