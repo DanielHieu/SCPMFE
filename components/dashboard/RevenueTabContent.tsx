@@ -5,7 +5,7 @@ import { Activity, Car, DollarSign, FileText } from "lucide-react"
 import { useEffect, useState } from "react"
 import { fetchApi } from "@/lib/api/api-helper"
 import { SummaryRevenueReportResponse, ParkingLotRevenue, MonthlyRevenueByType } from "@/types/dashboard"
-import { BarChart, PieChart } from "../ui/charts"
+import { ParkingLotBarChart, PieChart } from "../ui/charts"
 
 // Helper to get month names in Vietnamese (if not already defined elsewhere)
 const getMonthNameVn = (monthNumber: number): string => {
@@ -142,10 +142,13 @@ const RevenueTabContent = () => {
             tooltip: {
                 callbacks: {
                     label: function (context: any) {
+                        console.log("callbacks", context.parsed.y);
+                        
                         let label = context.dataset.label || '';
                         if (label) {
                             label += ': ';
                         }
+            
                         if (context.parsed.y !== null) {
                             label += formatCurrency(context.parsed.y);
                         }
@@ -162,6 +165,7 @@ const RevenueTabContent = () => {
                         if (typeof value === 'number') {
                             return formatCurrency(value);
                         }
+                        
                         return value;
                     }
                 }
@@ -203,7 +207,24 @@ const RevenueTabContent = () => {
             }
         },
         plugins: {
-            ...commonChartOptions.plugins,
+          
+            tooltip: {
+                callbacks: {
+                    label: function (context: any) {
+                        console.log("horizontalBarChartOptions", context.parsed.x);
+                        
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+            
+                        if (context.parsed.y !== null) {
+                            label += formatCurrency(context.parsed.x);
+                        }
+                        return label;
+                    }
+                }
+            },
             legend: { display: false } // Hide legend for single dataset
         }
     };
@@ -274,7 +295,7 @@ const RevenueTabContent = () => {
                                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                                 </div>
                             ) : (
-                                <BarChart
+                                <ParkingLotBarChart
                                     data={parkingLotChartData}
                                     options={horizontalBarChartOptions}
                                 />
@@ -315,7 +336,7 @@ const RevenueTabContent = () => {
                                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                                 </div>
                             ) : (
-                                <BarChart
+                                <ParkingLotBarChart
                                     data={monthlyChartData}
                                     options={stackedBarChartOptions}
                                 />

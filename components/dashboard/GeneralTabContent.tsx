@@ -1,6 +1,4 @@
 import { fetchApi } from "@/lib/api/api-helper"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { BarChart, PieChart } from "../ui/charts"
 import { StatsCard } from "./StatsCard"
 import { SummaryCard } from "./SummaryCard"
 import { SummaryReportResponse } from "@/types/dashboard"
@@ -73,30 +71,6 @@ const GeneralTabContent = () => {
                 icon={Percent}
             />
         </div >
-
-        {/* Charts */}
-        < div className="grid gap-4 md:grid-cols-2" >
-            <Card>
-                <CardHeader>
-                    <CardTitle>Doanh thu theo tháng</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="h-[300px]">
-                        <BarChart />
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Phân bổ doanh thu</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="h-[300px]">
-                        <PieChart />
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
         <ContractNeedToProcess />
         <ContractFutureExpired />
     </>

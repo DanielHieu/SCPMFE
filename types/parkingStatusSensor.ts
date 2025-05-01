@@ -10,9 +10,11 @@ export interface ParkingStatusSensor {
 export interface AddParkingStatusSensorPayload {
     apiKey: string;
     parkingSpaceId: number;
+    status?: string;
 }
 
 export interface UpdateParkingStatusSensorPayload {
     parkingStatusSensorId: number;
     apiKey: string;
+    status?: string;
 }

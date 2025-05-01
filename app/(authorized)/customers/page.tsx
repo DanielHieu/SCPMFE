@@ -68,7 +68,7 @@ export default function CustomerPage() {
     }
     if (filterStatus === "inactive") {
       return allCustomer.filter((c) => !c.isActive);
-    }
+    }     
     return allCustomer;
   }, [allCustomer, filterStatus]);
 

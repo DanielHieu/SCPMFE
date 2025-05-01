@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { getParkingStatusSensors } from "@/lib/api/parking-space.api";
+import { getParkingStatusSensors, addParkingStatusSensor, updateParkingStatusSensor } from "@/lib/api/parking-space.api";
 import { ParkingStatusSensor } from "@/types/parkingStatusSensor";
 import { Badge } from "@/components/ui/badge";
 import { fetchApi } from "@/lib/api/api-helper";
@@ -55,7 +55,7 @@ type SensorWithUI = ParkingStatusSensor & {
     batteryLevel?: number;
 };
 
-type FilterStatus = "all" | "active" | "inactive" | "maintenance";
+type FilterStatus = "all" | "active" | "inactive";
 
 export default function SensorsPage() {
     const [sensors, setSensors] = useState<SensorWithUI[]>([]);
@@ -72,7 +72,6 @@ export default function SensorsPage() {
         all: 0,
         active: 0,
         inactive: 0,
-        maintenance: 0,
     });
 
     // Trạng thái cho lựa chọn phân cấp
@@ -147,13 +146,11 @@ export default function SensorsPage() {
             const allCount = mappedSensors.length;
             const activeCount = mappedSensors.filter(s => s.status?.toLowerCase() === "active").length;
             const inactiveCount = mappedSensors.filter(s => s.status?.toLowerCase() === "inactive").length;
-            const maintenanceCount = mappedSensors.filter(s => s.status?.toLowerCase() === "maintenance").length;
 
             setCounts({
                 all: allCount,
                 active: activeCount,
                 inactive: inactiveCount,
-                maintenance: maintenanceCount,
             });
 
         } catch (err) {
@@ -165,7 +162,6 @@ export default function SensorsPage() {
                 all: 0,
                 active: 0,
                 inactive: 0,
-                maintenance: 0,
             });
         } finally {
             setIsLoading(false);
@@ -177,51 +173,39 @@ export default function SensorsPage() {
         fetchSensors(debouncedSearchTerm);
     }, [debouncedSearchTerm, fetchSensors]);
 
-    // Ánh xạ trạng thái từ API sang bộ lọc giao diện
-    const mapStatusToFilter = (status: string): FilterStatus => {
-        const lowerStatus = status.toLowerCase();
-        if (lowerStatus === "active") return "active";
-        if (lowerStatus === "inactive") return "inactive";
-        if (lowerStatus === "maintenance") return "maintenance";
-        return "all";
-    };
-
     // Lọc cảm biến dựa trên trạng thái
     const filteredSensors = useMemo(() => {
         if (filterStatus === "active") {
-            return sensors.filter((s) => s.status.toLowerCase() === "active");
+            return sensors.filter((s) => s.status.toLowerCase() === "active" || s.status === "Active");
         }
         if (filterStatus === "inactive") {
-            return sensors.filter((s) => s.status.toLowerCase() === "inactive");
-        }
-        if (filterStatus === "maintenance") {
-            return sensors.filter((s) => s.status.toLowerCase() === "maintenance");
+            return sensors.filter((s) => s.status.toLowerCase() === "inactive" || s.status === "Inactive");
         }
         return sensors;
     }, [sensors, filterStatus]);
 
-    const refreshData = useCallback(() => {
+    const refreshData = useCallback(() => {       
         fetchSensors(debouncedSearchTerm);
     }, [debouncedSearchTerm, fetchSensors]);
 
     // Xử lý thêm cảm biến mới
     const handleAddSensor = async (sensorData: Partial<SensorWithUI>) => {
         try {
+            // Kiểm tra các giá trị bắt buộc
+            if (!sensorData.apiKey || !sensorData.parkingSpaceId) {
+                toast.error("Thiếu thông tin cảm biến");
+                return;
+            }
+            
             // Chuẩn bị dữ liệu để gửi đến API
             const payload = {
                 apiKey: sensorData.apiKey,
                 parkingSpaceId: sensorData.parkingSpaceId,
-                status: "active" // Mặc định trạng thái là active khi tạo mới
+                status: sensorData.status || "Active" // Sử dụng status đã chọn hoặc mặc định là "Active"
             };
 
             // Gọi API để thêm cảm biến
-            await fetchApi('/sensor/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
+            await addParkingStatusSensor(payload);
 
             toast.success("Thêm cảm biến thành công");
 
@@ -238,11 +222,48 @@ export default function SensorsPage() {
         }
     };
 
+    // Xử lý cập nhật cảm biến
+    const handleUpdateSensor = async (sensorData: Partial<SensorWithUI>) => {
+        try {
+            // Kiểm tra các giá trị bắt buộc
+            if (!sensorData.apiKey || !sensorData.parkingStatusSensorId) {
+                toast.error("Thiếu thông tin cảm biến");
+                return;
+            }
+            
+            // Chuẩn bị dữ liệu để gửi đến API
+            const payload = {
+                parkingStatusSensorId: sensorData.parkingStatusSensorId,
+                apiKey: sensorData.apiKey,
+                status: sensorData.status
+            };
+
+            // Gọi API để cập nhật cảm biến
+            await updateParkingStatusSensor(payload);
+            
+            toast.success("Cập nhật cảm biến thành công");
+            
+            // Cập nhật danh sách cảm biến
+            refreshData();
+            setIsEditModalOpen(false);
+            setEditingSensor(null);
+        } catch (err) {
+            toast.error("Lỗi: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
+        }
+    };
+
     // Xử lý xóa cảm biến
     const handleDeleteSensor = async (sensorId: number) => {
         try {
-            // Trong triển khai thực tế, bạn sẽ gọi API để xóa cảm biến
-            toast.success("Chức năng chưa được triển khai trong bản demo này");
+            // Gọi API để xóa cảm biến
+            await fetchApi(`/sensor/${sensorId}`, {
+                method: 'DELETE',
+            });
+
+            toast.success("Xóa cảm biến thành công");
+            
+            // Cập nhật danh sách cảm biến sau khi xóa
+            refreshData();
         } catch (err) {
             toast.error("Lỗi: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
         }
@@ -265,14 +286,6 @@ export default function SensorsPage() {
                 label: "Không hoạt động",
                 variant: "outline" as const,
                 className: "bg-red-100 text-red-800"
-            };
-        }
-
-        if (statusLower === "maintenance") {
-            return {
-                label: "Đang bảo trì",
-                variant: "outline" as const,
-                className: "bg-yellow-100 text-yellow-800"
             };
         }
 
@@ -420,12 +433,6 @@ export default function SensorsPage() {
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
                                 Không hoạt động ({counts.inactive})
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="maintenance"
-                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
-                            >
-                                Đang bảo trì ({counts.maintenance})
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
@@ -747,29 +754,23 @@ export default function SensorsPage() {
                         <div className="space-y-2">
                             <Label htmlFor="status" className="font-medium">Trạng thái</Label>
                             <Select
-                                value={newSensor.status || "active"}
+                                value={newSensor.status || "Active"}
                                 onValueChange={(value) => setNewSensor({ ...newSensor, status: value })}
                             >
                                 <SelectTrigger id="status" className="w-full">
                                     <SelectValue placeholder="Chọn trạng thái" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="active">
+                                    <SelectItem value="Active">
                                         <div className="flex items-center">
                                             <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
                                             Hoạt động
                                         </div>
                                     </SelectItem>
-                                    <SelectItem value="inactive">
+                                    <SelectItem value="Inactive">
                                         <div className="flex items-center">
                                             <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
                                             Không hoạt động
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="maintenance">
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
-                                            Đang bảo trì
                                         </div>
                                     </SelectItem>
                                 </SelectContent>
@@ -808,6 +809,116 @@ export default function SensorsPage() {
                             disabled={!newSensor.parkingSpaceId || !newSensor.apiKey}
                         >
                             Thêm cảm biến
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Sensor Modal */}
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Chỉnh sửa cảm biến</DialogTitle>
+                        <DialogDescription>
+                            Cập nhật API Key và trạng thái của cảm biến.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {editingSensor && (
+                        <div className="space-y-4 py-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="sensorId" className="font-medium">ID Cảm biến</Label>
+                                <Input
+                                    id="sensorId"
+                                    value={editingSensor.parkingStatusSensorId.toString()}
+                                    readOnly
+                                    className="bg-gray-50"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="sensorName" className="font-medium">Tên cảm biến</Label>
+                                <Input
+                                    id="sensorName"
+                                    value={editingSensor.name}
+                                    readOnly
+                                    className="bg-gray-50"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="sensorLocation" className="font-medium">Vị trí</Label>
+                                <Input
+                                    id="sensorLocation"
+                                    value={editingSensor.parkingSpaceName}
+                                    readOnly
+                                    className="bg-gray-50"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="editApiKey" className="font-medium">API Key</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="editApiKey"
+                                        value={editingSensor.apiKey}
+                                        onChange={(e) => setEditingSensor({
+                                            ...editingSensor,
+                                            apiKey: e.target.value
+                                        })}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setEditingSensor({
+                                            ...editingSensor,
+                                            apiKey: generateApiKey()
+                                        })}
+                                    >
+                                        Tạo mới
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="editStatus" className="font-medium">Trạng thái</Label>
+                                <Select
+                                    value={editingSensor.status}
+                                    onValueChange={(value) => setEditingSensor({
+                                        ...editingSensor,
+                                        status: value
+                                    })}
+                                >
+                                    <SelectTrigger id="editStatus" className="w-full">
+                                        <SelectValue placeholder="Chọn trạng thái" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Active">
+                                            <div className="flex items-center">
+                                                <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                                Hoạt động
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="Inactive">
+                                            <div className="flex items-center">
+                                                <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
+                                                Không hoạt động
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setIsEditModalOpen(false);
+                                setEditingSensor(null);
+                            }}
+                        >
+                            Hủy
+                        </Button>
+                        <Button
+                            onClick={() => handleUpdateSensor(editingSensor!)}
+                        >
+                            Lưu thay đổi
                         </Button>
                     </DialogFooter>
                 </DialogContent>

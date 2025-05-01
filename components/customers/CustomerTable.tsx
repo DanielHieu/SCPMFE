@@ -165,36 +165,42 @@ export function CustomerTable({
         cell: ({ row }) => {
           const customer = row.original;
           return (
-            <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Mở menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {
-                    !customer.isActive && <DropdownMenuItem onClick={() => onApproveClick(customer)}>
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Phê duyệt
-                    </DropdownMenuItem>
-                  }
-                  {
-                    customer.isActive && <DropdownMenuItem onClick={() => onDisableClick(customer)}>
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Vô hiệu hóa
-                    </DropdownMenuItem>
-                  }
-                  <DropdownMenuItem>
-                    <Link href={`/customers/${customer.customerId}`} className="flex items-center ml-2">
-                      <Eye className="mr-2 h-4 w-4 text-slate-500" />
-                      Xem chi tiết
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
+            <div className="flex justify-end space-x-2">
+              {!customer.isActive && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 px-2 text-xs text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" 
+                  onClick={() => onApproveClick(customer)}
+                >
+                  <CheckCircle className="mr-1 h-3 w-3" />
+                  Kích hoạt
+                </Button>
+              )}
+              
+              {customer.isActive && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" 
+                  onClick={() => onDisableClick(customer)}
+                >
+                  <XCircle className="mr-1 h-3 w-3" />
+                  Vô hiệu
+                </Button>
+              )}
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 px-2 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700" 
+                asChild
+              >
+                <Link href={`/customers/${customer.customerId}`} className="flex items-center">
+                  <Eye className="mr-1 h-3 w-3" />
+                  Chi tiết
+                </Link>
+              </Button>
             </div>
           );
         },

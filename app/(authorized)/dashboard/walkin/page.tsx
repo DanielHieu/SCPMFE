@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import ParkingLotContractRevenueInYear from "@/components/dashboard/ParkingLotContractRevenueInYear";
 import ParkingLotWalkinRevenueInYear from "@/components/dashboard/ParkingLotWalkinRevenueInYear";
 
 export default function ContractDashboardPage() {

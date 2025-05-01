@@ -40,7 +40,7 @@ const defaultOptions: ChartOptions<any> = {
 };
 
 // Bar Chart Component
-export function BarChart({ data, options = {} }: { data?: any; options?: ChartOptions<"bar"> }) {
+export function ParkingLotBarChart({ data, options = {} }: { data?: any; options?: ChartOptions<"bar"> }) {
   // Default data if none provided
   const defaultData = {
     labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],

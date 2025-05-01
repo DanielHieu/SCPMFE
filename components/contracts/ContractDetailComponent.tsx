@@ -185,7 +185,7 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                     ]}
                 />
             </div>
-            
+
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Hợp đồng</h1>
                 <p className="text-gray-500">Mã hợp đồng: {contract.contractId}</p>

@@ -110,7 +110,7 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-              
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleSignOut}

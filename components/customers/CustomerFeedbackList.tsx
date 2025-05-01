@@ -2,7 +2,6 @@
 import React from "react";
 import { Feedback } from "@/types"; // Use your specific Feedback type
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 interface CustomerFeedbackListProps {
   feedback: Feedback[];
@@ -13,13 +12,6 @@ export function CustomerFeedbackList({ feedback }: CustomerFeedbackListProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-medium">Phản hồi của khách hàng</CardTitle>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => alert("Chuyển đến danh sách phản hồi đầy đủ")}
-        >
-          Xem tất cả phản hồi
-        </Button>
       </CardHeader>
       <CardContent>
         {feedback?.length > 0 ? (
