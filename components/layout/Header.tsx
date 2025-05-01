@@ -65,23 +65,6 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
       <div className="flex items-center gap-2">
         {session?.user ? (
           <>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-gray-500 hover:text-gray-700 relative"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-gray-500 hover:text-gray-700 hidden md:flex"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-
             <div className="h-6 border-l border-gray-200 mx-1 hidden md:block"></div>
 
             <DropdownMenu>
