@@ -14,6 +14,7 @@ import { Bell, LogOut, Menu, Settings } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "@/lib/utils";
+import { dashboardTheme } from "@/app/(dashboard)/theme";
 
 interface HeaderProps {
   toggleSidebarAction: () => void;
@@ -31,8 +32,11 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
   if (status === "loading") {
     return (
       <header className={cn(
-        "bg-white border-b border-gray-200 z-10 transition-all duration-200 sticky top-0",
-        "p-4 flex justify-between items-center h-16 flex-shrink-0"
+        dashboardTheme.header.background,
+        dashboardTheme.header.borderColor,
+        "z-10 transition-all duration-200 sticky top-0",
+        `h-[${dashboardTheme.header.height}]`,
+        "p-4 flex justify-between items-center flex-shrink-0"
       )}>
         <div className="w-full flex justify-center">
           <div className="animate-pulse w-48 h-6 bg-gray-200 rounded"></div>
@@ -43,11 +47,13 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
 
   return (
     <header className={cn(
-      "bg-white z-10 transition-all duration-200 sticky top-0",
+      dashboardTheme.header.background,
+      "z-10 transition-all duration-200 sticky top-0",
       isScrolled
         ? "shadow-md border-transparent"
-        : "border-b border-gray-200",
-      "p-4 flex justify-between items-center h-16 flex-shrink-0"
+        : `border-b ${dashboardTheme.header.borderColor}`,
+      `h-[${dashboardTheme.header.height}]`,
+      "p-4 flex justify-between items-center flex-shrink-0"
     )}>
       {/* Left side - Menu button */}
       <div className="flex items-center gap-3">
@@ -62,54 +68,43 @@ export default function Header({ toggleSidebarAction, isScrolled = false }: Head
       </div>
 
       {/* Right side - Notifications, settings, user menu */}
-      <div className="flex items-center gap-2">
-        {session?.user ? (
-          <>
-            <div className="h-6 border-l border-gray-200 mx-1 hidden md:block"></div>
+      <div className="flex items-center space-x-4">
+        {/* Notifications */}
+        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-700">
+          <Bell className="h-5 w-5" />
+        </Button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full overflow-hidden">
-                  <Avatar className="h-9 w-9 border-2 border-white">
-                    <AvatarImage
-                      src={session.user.image ?? undefined}
-                      alt={session.user.name ?? "Người dùng"}
-                    />
-                    <AvatarFallback className="bg-blue-500 text-white">
-                      {session.user.name?.charAt(0).toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {session.user.name ?? "Người dùng"}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {session.user.email ?? ""}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleSignOut}
-                  className="cursor-pointer text-red-500 focus:text-red-500"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Đăng xuất</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        ) : (
-          <Button variant="outline" asChild className="font-medium">
-            <Link href="/auth/login">Đăng nhập</Link>
-          </Button>
-        )}
+        {/* User dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 rounded-full">
+              <Avatar className="h-8 w-8 border border-gray-200">
+                <AvatarImage src={session?.user?.image || undefined} alt={session?.user?.name || "User avatar"} />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="font-normal">
+                <div className="font-medium">{session?.user?.name}</div>
+                <div className="text-xs text-gray-500">{session?.user?.email}</div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer">
+              <Settings className="w-4 h-4 mr-2" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              <span>Sign out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

@@ -281,7 +281,6 @@ export default function CustomerPage() {
               Hủy
             </Button>
             <Button
-              variant="destructive"
               onClick={handleDisableCustomer}
               disabled={!disableReason.trim()}
             >

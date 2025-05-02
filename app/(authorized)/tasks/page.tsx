@@ -85,13 +85,6 @@ export default function TasksPage() {
 
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    const filterDisplayMap: Record<FilterStatus, string> = {
-        All: "Tất cả nhiệm vụ",
-        Pending: "Chờ xử lý",
-        InProgress: "Đang thực hiện",
-        Completed: "Hoàn thành",
-    };
-
     // Fetch tasks data
     const fetchTasks = useCallback(async () => {
         setIsLoading(true);
@@ -196,19 +189,19 @@ export default function TasksPage() {
             title?: string;
             description?: string;
         } = {};
-        
+
         // Validate title
         if (!data.title || data.title.trim() === '') {
             errors.title = "Tiêu đề không được để trống";
         }
-        
+
         // Validate description
         if (!data.description || data.description.trim() === '') {
             errors.description = "Mô tả không được để trống";
         }
-        
+
         setFormErrors(errors);
-        
+
         // Form is valid if there are no errors
         return Object.keys(errors).length === 0;
     };
@@ -220,13 +213,13 @@ export default function TasksPage() {
             if (!validateForm(newTask)) {
                 return;
             }
-            
+
             // Check if assignedToId is set
             if (!newTask.assignedToId) {
                 toast.error("Vui lòng chọn người thực hiện");
                 return;
             }
-            
+
             // Validate dates
             if (!validateDates(newTask.startDate || "", newTask.endDate || "")) {
                 return;
@@ -279,7 +272,7 @@ export default function TasksPage() {
             if (!validateForm(taskData)) {
                 return;
             }
-            
+
             // Check if assignedToId is set
             if (!taskData.assignedToId) {
                 toast.error("Vui lòng chọn người thực hiện");
@@ -294,7 +287,7 @@ export default function TasksPage() {
             // Format dates properly and log for verification
             const formattedStartDate = new Date(taskData.startDate);
             const formattedEndDate = new Date(taskData.endDate);
-            
+
             console.log("Date format check - Original:", {
                 startDate: taskData.startDate,
                 endDate: taskData.endDate
@@ -303,7 +296,7 @@ export default function TasksPage() {
                 startDate: formattedStartDate,
                 endDate: formattedEndDate
             });
-            
+
             const payload: UpdateTaskPayload = {
                 taskEachId: taskData.taskEachId,
                 title: taskData.title,
@@ -342,7 +335,7 @@ export default function TasksPage() {
     // Format date for input type="date" (YYYY-MM-DD)
     const formatDateInput = (dateString: string) => {
         if (!dateString) return "";
-        
+
         try {
             // Check if the date is in dd/MM/yyyy format
             if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
@@ -350,41 +343,41 @@ export default function TasksPage() {
                 // Fix timezone issue by using direct date construction with local time
                 return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
             }
-            
+
             // Handle standard date format
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return dateString;
-            
+
             // Fix timezone issue by extracting date parts directly
             const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
-            
+
             return `${year}-${month}-${day}`;
         } catch (error) {
             console.error("Error formatting date for input:", error);
             return dateString;
         }
     };
-    
+
     // Format date for display as dd/MM/yyyy
     const formatDate = (dateString: string) => {
         if (!dateString) return "";
-        
+
         try {
             // Check if already in dd/MM/yyyy format
             if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
                 return dateString;
             }
-            
+
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return dateString;
-            
+
             // Format as dd/MM/yyyy
             const day = date.getDate().toString().padStart(2, '0');
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const year = date.getFullYear();
-            
+
             return `${day}/${month}/${year}`;
         } catch (error) {
             console.error("Error formatting date for display:", error);
@@ -441,18 +434,18 @@ export default function TasksPage() {
     // Handle deleting a task
     const handleDeleteTask = async (taskId: number) => {
         if (!taskId) return;
-        
+
         setIsDeleting(true);
         try {
             // Call API to delete task
             await fetchApi(`/TaskEach/${taskId}`, {
                 method: "DELETE",
             });
-            
+
             toast.success("Nhiệm vụ đã được xóa thành công");
             // Refresh task list
             fetchTasks();
-            
+
             setIsDeleteModalOpen(false);
             setDeletingTask(null);
         } catch (err) {
@@ -678,21 +671,21 @@ export default function TasksPage() {
 
                 {/* Add Task Modal */}
                 <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md md:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Thêm nhiệm vụ mới</DialogTitle>
                             <DialogDescription>
                                 Tạo một nhiệm vụ mới và gán cho một thành viên trong nhóm.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
+                        <div className="py-4 pr-2">
                             {/* Tiêu đề nhiệm vụ */}
                             <div className="space-y-2">
                                 <Label htmlFor="title" className="text-sm font-medium">
                                     Tiêu đề nhiệm vụ <span className="text-red-500">*</span>
                                 </Label>
-                                <Input 
-                                    id="title" 
+                                <Input
+                                    id="title"
                                     placeholder="Nhập tiêu đề nhiệm vụ"
                                     className={`w-full ${formErrors.title ? "border-red-500" : ""}`}
                                     value={newTask.title}
@@ -700,7 +693,7 @@ export default function TasksPage() {
                                         setNewTask({ ...newTask, title: e.target.value });
                                         // Clear error when user types
                                         if (formErrors.title && e.target.value.trim() !== '') {
-                                            setFormErrors({...formErrors, title: undefined});
+                                            setFormErrors({ ...formErrors, title: undefined });
                                         }
                                     }}
                                 />
@@ -714,9 +707,9 @@ export default function TasksPage() {
                                 <Label htmlFor="description" className="text-sm font-medium">
                                     Mô tả chi tiết <span className="text-red-500">*</span>
                                 </Label>
-                                <Textarea 
-                                    id="description" 
-                                    placeholder="Nhập mô tả chi tiết cho nhiệm vụ" 
+                                <Textarea
+                                    id="description"
+                                    placeholder="Nhập mô tả chi tiết cho nhiệm vụ"
                                     className={`w-full min-h-[100px] resize-y ${formErrors.description ? "border-red-500" : ""}`}
                                     rows={4}
                                     value={newTask.description}
@@ -724,7 +717,7 @@ export default function TasksPage() {
                                         setNewTask({ ...newTask, description: e.target.value });
                                         // Clear error when user types
                                         if (formErrors.description && e.target.value.trim() !== '') {
-                                            setFormErrors({...formErrors, description: undefined});
+                                            setFormErrors({ ...formErrors, description: undefined });
                                         }
                                     }}
                                 />
@@ -861,7 +854,7 @@ export default function TasksPage() {
 
                 {/* Edit Task Dialog */}
                 <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md md:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Chỉnh sửa nhiệm vụ</DialogTitle>
                             <DialogDescription>
@@ -871,7 +864,7 @@ export default function TasksPage() {
                         {editingTask && (
                             <>
                                 {/* Console log placed in useEffect instead of directly in JSX */}
-                                <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
+                                <div className="py-4 pr-2">
                                     {/* Tiêu đề nhiệm vụ */}
                                     <div className="space-y-2">
                                         <Label htmlFor="edit-title" className="text-sm font-medium">
@@ -884,11 +877,11 @@ export default function TasksPage() {
                                             onChange={(e) => {
                                                 setEditingTask(prev => {
                                                     if (!prev) return prev;
-                                                    return {...prev, title: e.target.value};
+                                                    return { ...prev, title: e.target.value };
                                                 });
                                                 // Clear error when user types
                                                 if (formErrors.title && e.target.value.trim() !== '') {
-                                                    setFormErrors({...formErrors, title: undefined});
+                                                    setFormErrors({ ...formErrors, title: undefined });
                                                 }
                                             }}
                                         />
@@ -910,11 +903,11 @@ export default function TasksPage() {
                                             onChange={(e) => {
                                                 setEditingTask(prev => {
                                                     if (!prev) return prev;
-                                                    return {...prev, description: e.target.value};
+                                                    return { ...prev, description: e.target.value };
                                                 });
                                                 // Clear error when user types
                                                 if (formErrors.description && e.target.value.trim() !== '') {
-                                                    setFormErrors({...formErrors, description: undefined});
+                                                    setFormErrors({ ...formErrors, description: undefined });
                                                 }
                                             }}
                                         />
@@ -1057,7 +1050,7 @@ export default function TasksPage() {
                                     <Button
                                         variant="outline"
                                         onClick={() => setIsEditModalOpen(false)}
-                                        className="mt-2 sm:mt-0"
+                                        className="mt-2 sm:mt-0 mr-2"
                                     >
                                         Hủy
                                     </Button>
@@ -1094,7 +1087,7 @@ export default function TasksPage() {
                                         {getPriorityBadge(viewingTask.priority)}
                                     </div>
                                 </div>
-                                
+
                                 {/* Task details in grid layout */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4 bg-gray-50">
                                     {/* Assigned to */}
@@ -1105,7 +1098,7 @@ export default function TasksPage() {
                                             <p className="text-sm">{viewingTask.assigneeName || "Chưa phân công"}</p>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Date range */}
                                     <div className="flex items-start gap-2">
                                         <CalendarDays className="h-5 w-5 text-gray-500 mt-0.5" />
@@ -1116,7 +1109,7 @@ export default function TasksPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Task ID */}
                                     <div className="flex items-start gap-2">
                                         <FileBadge className="h-5 w-5 text-gray-500 mt-0.5" />
@@ -1126,7 +1119,7 @@ export default function TasksPage() {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 {/* Description */}
                                 <div className="space-y-2">
                                     <h4 className="text-sm font-medium text-gray-500">Mô tả chi tiết</h4>
@@ -1140,45 +1133,8 @@ export default function TasksPage() {
                                         )}
                                     </div>
                                 </div>
-                                
-                                {/* Activity log - Placeholder for future implementation */}
-                                <div className="space-y-2">
-                                    <h4 className="text-sm font-medium text-gray-500 flex items-center">
-                                        <CornerDownRight className="h-4 w-4 mr-1" />
-                                        Lịch sử hoạt động
-                                    </h4>
-                                    <div className="p-4 border rounded-lg bg-white text-sm text-gray-400 italic">
-                                        Chức năng này sẽ được cập nhật trong thời gian tới
-                                    </div>
-                                </div>
                             </div>
                         )}
-                        <DialogFooter className="sm:justify-between">
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsViewModalOpen(false)}
-                            >
-                                Đóng
-                            </Button>
-                            <Button
-                                onClick={() => {
-                                    if (viewingTask) {
-                                        // Make sure to format dates correctly when setting the editing task
-                                        const taskForEdit = {
-                                            ...viewingTask,
-                                            startDate: viewingTask.startDate || new Date().toISOString().split('T')[0],
-                                            endDate: viewingTask.endDate || new Date().toISOString().split('T')[0]
-                                        };
-                                        setEditingTask(taskForEdit);
-                                        setIsViewModalOpen(false);
-                                        setIsEditModalOpen(true);
-                                    }
-                                }}
-                            >
-                                <Edit2 className="h-4 w-4 mr-2" />
-                                Chỉnh sửa
-                            </Button>
-                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
 
@@ -1220,7 +1176,6 @@ export default function TasksPage() {
                                 Hủy
                             </Button>
                             <Button
-                                variant="destructive"
                                 onClick={() => deletingTask && handleDeleteTask(Number(deletingTask.taskEachId))}
                                 disabled={isDeleting}
                                 className="bg-red-600 hover:bg-red-700"

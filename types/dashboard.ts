@@ -23,11 +23,13 @@ export interface WailkinDateRevenue{
 
 export interface MonthlyRevenues{
   month: number;
+  name?: string; // Tên tháng để hiển thị trên biểu đồ
   parkingLotRevenues: Array<ParkingLotRevenue>;
 }
 
 export interface QuarterlyRevenues{
   quarter: number;
+  name?: string; // Tên quý để hiển thị trên biểu đồ
   parkingLotRevenues: Array<ParkingLotRevenue>;
 }
 
@@ -81,11 +83,13 @@ export interface ParkingLotRevenue {
 // Ensure MonthlyRevenues/QuarterlyRevenues use the correct ParkingLotRevenue
 export interface MonthlyRevenues {
   month: number;
+  name?: string; // Tên tháng để hiển thị trên biểu đồ
   parkingLotRevenues: Array<ParkingLotRevenue>;
 }
 
 export interface QuarterlyRevenues {
   quarter: number;
+  name?: string; // Tên quý để hiển thị trên biểu đồ
   parkingLotRevenues: Array<ParkingLotRevenue>;
 }
 

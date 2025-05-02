@@ -16,6 +16,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { dashboardTheme } from "@/app/(dashboard)/theme";
+import { colors } from "@/lib/design-system";
 
 interface NavItem {
   href: string;
@@ -77,19 +79,26 @@ export default function Sidebar({ isOpen, toggleSidebarAction }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-white border-r flex-shrink-0 min-h-screen",
+        "fixed inset-y-0 left-0 z-40 flex-shrink-0 min-h-screen",
+        dashboardTheme.sidebar.background,
+        `border-r ${dashboardTheme.sidebar.borderColor}`,
+        dashboardTheme.sidebar.boxShadow,
         "flex flex-col transition-transform duration-300 ease-in-out md:sticky md:translate-x-0",
+        `w-[${dashboardTheme.sidebar.width}]`,
         isOpen ? "translate-x-0" : "-translate-x-full", // Slide in/out on mobile
       )}
     >
       <div className="flex flex-col h-full">
         {/* Logo/Brand Area */}
-        <div className="h-16 flex items-center justify-between px-4 border-b">
+        <div className={cn(
+          "h-16 flex items-center justify-between px-4",
+          `border-b ${dashboardTheme.sidebar.borderColor}`
+        )}>
           <Link href="/" className="text-xl font-bold flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-blue-600 flex items-center justify-center text-white">
+            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-white">
               SCPM
             </div>
-            <span className="bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
               Dashboard
             </span>
           </Link>
@@ -118,11 +127,11 @@ export default function Sidebar({ isOpen, toggleSidebarAction }: SidebarProps) {
                       className={cn(
                         "flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors",
                         isNavActive
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-gray-700 hover:bg-gray-100"
+                          ? dashboardTheme.sidebar.activeLink
+                          : `${dashboardTheme.sidebar.textColor} ${dashboardTheme.sidebar.hoverLink}`
                       )}
                     >
-                      <item.icon className={cn("w-5 h-5 mr-3", isNavActive && "text-blue-700")} />
+                      <item.icon className={cn("w-5 h-5 mr-3", isNavActive && "text-primary")} />
                       <span>{item.label}</span>
                       <ChevronRight
                         className={cn(
@@ -138,11 +147,11 @@ export default function Sidebar({ isOpen, toggleSidebarAction }: SidebarProps) {
                       className={cn(
                         "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
                         isNavActive
-                          ? "bg-blue-50 text-blue-700 font-medium"
-                          : "text-gray-700 hover:bg-gray-100"
+                          ? dashboardTheme.sidebar.activeLink
+                          : `${dashboardTheme.sidebar.textColor} ${dashboardTheme.sidebar.hoverLink}`
                       )}
                     >
-                      <item.icon className={cn("w-5 h-5 mr-3", isNavActive && "text-blue-700")} />
+                      <item.icon className={cn("w-5 h-5 mr-3", isNavActive && "text-primary")} />
                       <span>{item.label}</span>
                     </Link>
                   )}
@@ -165,11 +174,14 @@ export default function Sidebar({ isOpen, toggleSidebarAction }: SidebarProps) {
                             className={cn(
                               "flex items-center px-3 py-2 rounded-md text-sm transition-colors",
                               isSubActive
-                                ? "text-blue-700 font-medium bg-blue-50"
-                                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                                ? dashboardTheme.sidebar.activeLink
+                                : `text-gray-600 ${dashboardTheme.sidebar.hoverLink}`
                             )}
                           >
-                            <div className="w-1.5 h-1.5 rounded-full bg-current mr-3"></div>
+                            <div className={cn(
+                              "w-1.5 h-1.5 rounded-full mr-3",
+                              isSubActive ? "bg-primary" : "bg-gray-400"
+                            )}></div>
                             {subItem.label}
                           </Link>
                         );
@@ -183,7 +195,10 @@ export default function Sidebar({ isOpen, toggleSidebarAction }: SidebarProps) {
         </nav>
 
         {/* Footer section with version info or additional links */}
-        <div className="p-4 border-t border-gray-200 text-xs text-gray-500">
+        <div className={cn(
+          "p-4 text-xs text-gray-500",
+          `border-t ${dashboardTheme.sidebar.borderColor}`
+        )}>
           <div className="flex items-center justify-between">
             <span>SCPM Dashboard</span>
             <span>v1.0.0</span>

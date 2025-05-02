@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { dashboardTheme } from "@/app/(dashboard)/theme";
 
 const AuthorizedLayoutContent = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -56,14 +57,18 @@ const AuthorizedLayoutContent = ({ children }: { children: React.ReactNode }) =>
                 {/* Header */}
                 <Header
                     toggleSidebarAction={toggleSidebar}
+                    isScrolled={isScrolled}
                 />
                 <main className={cn(
                     "flex-1 transition-all duration-200 ease-in-out",
                     "overflow-x-hidden overflow-y-auto",
-                    "bg-gradient-to-br from-gray-50 to-gray-100",
-                    "p-4 md:p-6 lg:p-8"
+                    dashboardTheme.content.background,
+                    dashboardTheme.content.padding
                 )}>
-                    <div className="max-w-screen-2xl mx-auto">
+                    <div className={cn(
+                        "mx-auto",
+                        `max-w-[${dashboardTheme.layout.maxWidth}]`
+                    )}>
                         {children}
                     </div>
                 </main>
