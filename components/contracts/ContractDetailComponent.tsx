@@ -1,11 +1,12 @@
 "use client"
 
-import { getPaymentContracts } from "@/lib/api";
-import { fetchApi } from "@/lib/api/api-helper";
-import { Contract, ContractStatus, PaymentContract } from "@/types";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { fetchApi } from "@/lib/api/api-helper";
+import { getPaymentContracts } from "@/lib/api";
+import { Contract, ContractStatus } from "@/types/contract";
+import { PaymentContract, PaymentContractStatus } from "@/types/payment";
 
 const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
     const [contract, setContract] = useState<Contract | null>(null);
@@ -78,6 +79,8 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                 return "Đã hết hạn";
             case ContractStatus.Inactive:
                 return "Chờ xử lý";
+            case ContractStatus.PendingActivation:
+                return "Chờ kích hoạt";
             default:
                 return status;
         }
@@ -316,7 +319,7 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{paymentContract?.startDateString ? paymentContract.startDateString : ''}</td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{paymentContract?.endDateString ? paymentContract.endDateString : ''}</td>
                                             <td className="px-4 py-3 whitespace-nowrap">
-                                                {paymentContract.status === 'Pending' ? (
+                                                {paymentContract.status === PaymentContractStatus.Pending ? (
                                                     <div className="flex space-x-2">
                                                         <button
                                                             onClick={() => handleApprove(paymentContract.paymentContractId)}
@@ -344,9 +347,9 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                                             paymentContract.status === 'Rejected' ? 'bg-red-200 text-red-900 border border-red-300' :
                                                                 'bg-gray-200 text-gray-900 border border-gray-300'
                                                         }`}>
-                                                        {paymentContract.status === 'Approved' ? 'Đã chấp nhận' :
-                                                            paymentContract.status === 'Completed' ? 'Hoàn tất' :
-                                                                paymentContract.status === 'Rejected' ? 'Từ chối' :
+                                                        {paymentContract.status === PaymentContractStatus.Approved ? 'Đã chấp nhận' :
+                                                            paymentContract.status === PaymentContractStatus.Complete ? 'Hoàn tất' :
+                                                                paymentContract.status === PaymentContractStatus.Rejected ? 'Bị từ chối' :
                                                                     paymentContract.status}
                                                     </span>
                                                 )}

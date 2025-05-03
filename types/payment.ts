@@ -15,9 +15,9 @@ export interface PaymentContract {
 }
 
 export enum PaymentContractStatus {
-  Pending,
-  Approved,
-  Rejected,
-  Paid,
-  Complete,
+  Pending = "Pending",
+  Approved = "Approved",
+  Rejected = "Rejected",
+  Paid = "Paid",
+  Complete = "Complete",
 }

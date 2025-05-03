@@ -1,5 +1,3 @@
-import { PaymentContract } from "./payment";
-
 export interface Contract {
   contractId: number;
   parkingSpaceId: number;
@@ -31,7 +29,8 @@ export interface Contract {
 export enum ContractStatus {
   Active = "Active",
   Expired = "Expired",
-  Inactive = "Inactive"
+  Inactive = "Inactive",
+  PendingActivation = "PendingActivation"
 }
 
 export interface AddContractPayload {

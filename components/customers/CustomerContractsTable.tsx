@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Contract } from "@/types";
+import { Contract, ContractStatus } from "@/types/contract";
 import {
   ColumnDef,
   flexRender,
@@ -47,35 +47,45 @@ export function CustomerContractsTable({
         header: "Phương tiện",
         cell: ({ row }) =>
           `${row.original.car.model || "N/A"} (${row.original.car.licensePlate || "N/A"})`,
-      }, // Example: Assuming license plate is available directly or via relation
+      },
       {
         accessorKey: "status",
         header: "Trạng thái",
         cell: ({ row }) => {
-          const status = row.original.status as number | string; // Handle potential number/string status
+          const status = row.original.status;
           // Map status codes/strings to text and badge variants
           let text = "Không xác định";
-          let variant: "default" | "secondary" | "destructive" | "outline" =
-            "secondary";
-          // Example mapping (adjust based on your actual status values)
-          if (status === 1 || String(status).toLowerCase().includes("active")) {
-            text = "Đang hoạt động";
-            variant = "default";
-          } else if (
-            status === 2 ||
-            String(status).toLowerCase() === "inactive"
-          ) {
-            text = "Không hoạt động";
-            variant = "destructive";
-          } else if (
-            status === 3 ||
-            String(status).toLowerCase() === "expired"
-          ) {
-            text = "Hết hạn";
-            variant = "outline";
-          } // Add other statuses...
+          let variant: "default" | "secondary" | "destructive" | "outline" = "secondary";
+          let className = "";
 
-          return <Badge variant={variant}>{text}</Badge>;
+          // Use ContractStatus enum for better type safety
+          switch (status) {
+            case ContractStatus.Active:
+              text = "Đang hoạt động";
+              variant = "default";
+              className = "bg-green-100 text-green-800";
+              break;
+            case ContractStatus.Inactive:
+              text = "Chờ xử lý";
+              variant = "secondary";
+              className = "bg-yellow-100 text-yellow-800";
+              break;
+            case ContractStatus.Expired:
+              text = "Hết hạn";
+              variant = "outline";
+              className = "bg-red-100 text-red-800";
+              break;
+            case ContractStatus.PendingActivation:
+              text = "Chờ kích hoạt";
+              variant = "secondary";
+              className = "bg-blue-100 text-blue-800";
+              break;
+            default:
+              text = status || "Không xác định";
+              break;
+          }
+
+          return <Badge variant={variant} className={className}>{text}</Badge>;
         },
       },
       // Add an actions column here if needed (e.g., view contract details, terminate)

@@ -5,25 +5,58 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 import { searchContracts } from "@/lib/api/contract.api";
-import { Contract } from "@/types/contract";
+import { Contract, ContractStatus } from "@/types/contract";
 import Link from "next/link";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 
-type FilterStatus = "all" | "active" | "expired" | "inactive";
+type FilterStatus = "All" | "Active" | "Expired" | "Inactive" | "PendingActivation";
 
 export default function ContractsPage() {
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+    const [filterStatus, setFilterStatus] = useState<FilterStatus>("All");
     const [counts, setCounts] = useState({
         all: 0,
         active: 0,
         expired: 0,
         inactive: 0,
+        pendingActivation: 0,
     });
+
+    // Hàm lấy class cho badge dựa vào trạng thái hợp đồng
+    const getContractStatusStyle = (status: string) => {
+        switch (status) {
+            case ContractStatus.Active:
+                return "bg-emerald-100 text-emerald-800";
+            case ContractStatus.Expired:
+                return "bg-red-100 text-red-800";
+            case ContractStatus.Inactive:
+                return "bg-yellow-100 text-yellow-800";
+            case ContractStatus.PendingActivation:
+                return "bg-blue-100 text-blue-800";
+            default:
+                return "bg-gray-100 text-gray-800";
+        }
+    };
+
+    // Hàm lấy text hiển thị dựa vào trạng thái hợp đồng
+    const getContractStatusText = (status: string) => {
+        switch (status) {
+            case ContractStatus.Active:
+                return "Đang hiệu lực";
+            case ContractStatus.Expired:
+                return "Đã hết hạn";
+            case ContractStatus.Inactive:
+                return "Chờ xử lý";
+            case ContractStatus.PendingActivation:
+                return "Chờ kích hoạt";
+            default:
+                return status;
+        }
+    };
 
     // Fetch contracts data
     const fetchContracts = async () => {
@@ -40,9 +73,10 @@ export default function ContractsPage() {
             // Calculate counts
             const newCounts = {
                 all: contracts.length,
-                active: contracts.filter((c) => c.status === "Active").length,
-                expired: contracts.filter((c) => c.status === "Expired").length,
-                inactive: contracts.filter((c) => c.status === "Inactive").length,
+                active: contracts.filter((c) => c.status === ContractStatus.Active).length,
+                expired: contracts.filter((c) => c.status === ContractStatus.Expired).length,
+                inactive: contracts.filter((c) => c.status === ContractStatus.Inactive).length,
+                pendingActivation: contracts.filter((c) => c.status === ContractStatus.PendingActivation).length,
             };
 
             setCounts(newCounts);
@@ -65,10 +99,11 @@ export default function ContractsPage() {
                 contract.car.customerName.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesFilter =
-                filterStatus === "all" ||
-                (filterStatus === "active" && contract.status === "Active") ||
-                (filterStatus === "expired" && contract.status === "Expired") ||
-                (filterStatus === "inactive" && contract.status === "Inactive");
+                filterStatus === "All" ||
+                (filterStatus === "Active" && contract.status === ContractStatus.Active) ||
+                (filterStatus === "Expired" && contract.status === ContractStatus.Expired) ||
+                (filterStatus === "Inactive" && contract.status === ContractStatus.Inactive) ||
+                (filterStatus === "PendingActivation" && contract.status === ContractStatus.PendingActivation);
 
             return matchesSearch && matchesFilter;
         });
@@ -97,7 +132,7 @@ export default function ContractsPage() {
                     <div className="relative w-full max-w-md">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                            placeholder="Tìm kiếm số hợp đồng/tên khách hàng..."
+                            placeholder="Tìm kiếm số hợp đồng/tên khách hàng/biển số xe..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="h-10 pl-9 pr-4 w-full"
@@ -132,6 +167,12 @@ export default function ContractsPage() {
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
                                 Chưa hiệu lực ({counts.inactive})
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="pendingActivation"
+                                className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
+                            >
+                                Chờ kích hoạt ({counts.pendingActivation})
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
@@ -184,21 +225,19 @@ export default function ContractsPage() {
                                                 <td className="px-6 py-4">{contract.startDateString}</td>
                                                 <td className="px-6 py-4">{contract.endDateString}</td>
                                                 <td className="px-6 py-4">
-                                                    <Badge variant="secondary" className={
-                                                        contract.status === 'Active' ? 'bg-emerald-100 text-emerald-800' :
-                                                        contract.status === 'Expired' ? 'bg-red-100 text-red-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                                    }>
-                                                        {contract.status === 'Active' ? 'Đang hiệu lực' :
-                                                        contract.status === 'Expired' ? 'Đã hết hạn' : 'Chưa hiệu lực'}
+                                                    <Badge 
+                                                        variant="secondary" 
+                                                        className={getContractStatusStyle(contract.status)}
+                                                    >
+                                                        {getContractStatusText(contract.status)}
                                                     </Badge>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {contract.needToProcess ? 
+                                                    {contract.needToProcess ?
                                                         <Badge variant="secondary" className="bg-amber-100 text-amber-800">
                                                             Cần duyệt
-                                                        </Badge> 
-                                                    : ''}
+                                                        </Badge>
+                                                        : ''}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <Link href={`/contracts/${contract.contractId}`} className="text-blue-600 hover:text-blue-800">

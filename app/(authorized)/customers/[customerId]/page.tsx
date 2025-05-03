@@ -18,6 +18,7 @@ import {
   Contract,
   Feedback,
 } from "@/types";
+import { ParkingSpaceStatus } from "@/types/parking-space";
 
 // Import sub-components
 import { CustomerContractsTable } from "@/components/customers/CustomerContractsTable";
@@ -26,7 +27,7 @@ import { CustomerFeedbackList } from "@/components/customers/CustomerFeedbackLis
 // Import UI Components
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, Info, RefreshCw, ArrowLeft, Car as CarIcon, FileText, MessageSquare } from "lucide-react";
+import { Mail, Phone, Info, RefreshCw, ArrowLeft, Car as CarIcon, FileText, MessageSquare, Calendar, Clock, MapPin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -519,6 +520,36 @@ export default function CustomerDetailPage() {
                                       <p className="font-medium">{vehicle.color}</p>
                                     </div>
                                   </div>
+                                  {vehicle.entrance && (
+                                    <>
+                                      <Separator className="my-2" />
+                                      <div className="mt-2 space-y-2">
+                                        <h5 className="text-xs font-medium text-gray-500">Thông tin ra vào</h5>
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                          <div className="flex items-center gap-1">
+                                            <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                                            <span>{vehicle.entrance.entranceDate}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <Clock className="h-3.5 w-3.5 text-gray-400" />
+                                            <span>{vehicle.entrance.entranceTime}</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-sm">
+                                          <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                                          <span>{vehicle.entrance.parkingSpaceName}, {vehicle.entrance.floorName}</span>
+                                        </div>
+                                        <div className="mt-1">
+                                          <Badge
+                                            variant={vehicle.entrance.status === ParkingSpaceStatus.Occupied ? "default" : "secondary"}
+                                            className={vehicle.entrance.status === ParkingSpaceStatus.Occupied ? "bg-green-100 text-green-800" : "text-xs"}
+                                          >
+                                            {vehicle.entrance.status === ParkingSpaceStatus.Occupied ? "Đang đỗ" : vehicle.entrance.status === ParkingSpaceStatus.Pending ? "Xe đang vào / ra" : ""}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
                                 </CardContent>
                               </Card>
                             ))}
@@ -609,16 +640,37 @@ export default function CustomerDetailPage() {
                                     <p className="text-xs text-gray-500">Màu sắc</p>
                                     <p className="font-medium">{vehicle.color}</p>
                                   </div>
-                                  <div>
-                                    <p className="text-xs text-gray-500">Trạng thái</p>
-                                    <Badge variant="outline" className="mt-1">
-                                      {vehicle.status || "Đang hoạt động"}
-                                    </Badge>
-                                  </div>
                                 </div>
-                                <div className="mt-4 flex justify-end">
-                                  <Button variant="outline" size="sm">Xem chi tiết</Button>
-                                </div>
+                                {vehicle.entrance && (
+                                  <>
+                                    <Separator className="my-3" />
+                                    <div className="space-y-2">
+                                      <h5 className="text-xs font-medium text-gray-500">Thông tin ra vào</h5>
+                                      <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div className="flex items-center gap-1.5">
+                                          <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                                          <span>{vehicle.entrance.entranceDate}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <Clock className="h-3.5 w-3.5 text-gray-400" />
+                                          <span>{vehicle.entrance.entranceTime}</span>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 text-sm">
+                                        <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                                        <span>{vehicle.entrance.parkingSpaceName}, {vehicle.entrance.floorName}</span>
+                                      </div>
+                                      <div className="mt-1">
+                                        <Badge
+                                          variant={vehicle.entrance.status === ParkingSpaceStatus.Occupied ? "default" : "secondary"}
+                                          className={vehicle.entrance.status === ParkingSpaceStatus.Occupied ? "bg-green-100 text-green-800" : "text-xs"}
+                                        >
+                                          {vehicle.entrance.status === ParkingSpaceStatus.Occupied ? "Đang đỗ" : "Đã rời đi"}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
                               </CardContent>
                             </Card>
                           ))}
@@ -643,7 +695,6 @@ export default function CustomerDetailPage() {
                       ) : (
                         <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed">
                           <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-600 mb-2">Chưa có phản hồi nào</h3>
                           <p className="text-gray-500 mb-6 max-w-md mx-auto">
                             Khách hàng này chưa gửi phản hồi nào trong hệ thống.
                           </p>

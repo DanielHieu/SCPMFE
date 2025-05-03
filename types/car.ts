@@ -1,3 +1,5 @@
+import { ParkingSpaceStatus } from "./parking-space";
+
 export interface Car {
   carId: number;
   customerId: number;
@@ -10,4 +12,15 @@ export interface Car {
   customer?: string;
   thumbnail: string;
   brand: string;
+  entrance?: CarEntrance;
+}
+
+export interface CarEntrance {
+  entranceDate: string;
+  entranceTime: string;
+  parkingSpaceName: string;
+  floorName: string;
+  areaName: string;
+  parkingLotName: string;
+  status: ParkingSpaceStatus;
 }
