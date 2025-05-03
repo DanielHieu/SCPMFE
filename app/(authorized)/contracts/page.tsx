@@ -145,31 +145,31 @@ export default function ContractsPage() {
                     <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
                         <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
                             <TabsTrigger
-                                value="all"
+                                value="All"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
                                 Tất cả ({counts.all})
                             </TabsTrigger>
                             <TabsTrigger
-                                value="active"
+                                value="Active"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
                                 Đang hiệu lực ({counts.active})
                             </TabsTrigger>
                             <TabsTrigger
-                                value="expired"
+                                value="Expired"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
                                 Đã hết hạn ({counts.expired})
                             </TabsTrigger>
                             <TabsTrigger
-                                value="inactive"
+                                value="Inactive"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
                                 Chưa hiệu lực ({counts.inactive})
                             </TabsTrigger>
                             <TabsTrigger
-                                value="pendingActivation"
+                                value="PendingActivation"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
                                 Chờ kích hoạt ({counts.pendingActivation})
