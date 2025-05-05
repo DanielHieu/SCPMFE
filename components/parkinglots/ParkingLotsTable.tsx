@@ -206,7 +206,7 @@ export function ParkingLotsTable({
           <div className="flex items-center justify-between px-6 py-3 border-t">
               <div className="text-sm text-gray-500">
                   Hiển thị {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
-                  {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, customers.length)} trong số {customers.length} khách hàng
+                  {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, lots.length)} trong số {lots.length} 
               </div>
               <div className="space-x-2">
                   <Button
