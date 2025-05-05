@@ -343,7 +343,7 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                                     </button>
                                                 ) : (
                                                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${paymentContract.status === 'Approved' ? 'bg-blue-200 text-blue-900 border border-blue-300' :
-                                                        paymentContract.status === 'Complete' ? 'bg-purple-200 text-purple-900 border border-purple-300' :
+                                                        paymentContract.status === 'Completed' ? 'bg-purple-200 text-purple-900 border border-purple-300' :
                                                             paymentContract.status === 'Rejected' ? 'bg-red-200 text-red-900 border border-red-300' :
                                                                 'bg-gray-200 text-gray-900 border border-gray-300'
                                                         }`}>
