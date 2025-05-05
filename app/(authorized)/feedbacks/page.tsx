@@ -34,26 +34,28 @@ import { Textarea } from "@/components/ui/textarea";
 import useDebounce from "@/hooks/useDebounce";
 import { fetchApi } from "@/lib/api/api-helper";
 import { Feedback, FeedbackStatus } from "@/types/feedback";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 
-// Function to get status style and label
+const ItemsPerPage = 10;
+
+// Hàm lấy style và nhãn cho trạng thái
 const getStatusStyle = (status: string) => {
     switch (status) {
-        case "New":
+        case FeedbackStatus.New:
             return { label: "Mới", color: "bg-blue-100 text-blue-800" };
-        case "Viewed":
-            return { label: "Đã đọc", color: "bg-green-100 text-green-800" };
-        case "Responsed":
+        case FeedbackStatus.Viewed:
+            return { label: "Đã xem", color: "bg-green-100 text-green-800" };
+        case FeedbackStatus.Responsed:
             return { label: "Đã phản hồi", color: "bg-purple-100 text-purple-800" };
         default:
             return { label: "Không xác định", color: "bg-gray-100 text-gray-800" };
     }
 };
 
-type FilterStatus = "All" | "New" | "Viewed" | "Responsed";
+type FilterStatus = "All" | FeedbackStatus.New | FeedbackStatus.Viewed | FeedbackStatus.Responsed;
 
-// API function to fetch feedbacks
+// API lấy danh sách đánh giá
 const fetchFeedbacks = async (
     page: number = 1,
     limit: number = 10,
@@ -61,10 +63,8 @@ const fetchFeedbacks = async (
     status: string = "All"
 ): Promise<{ items: Feedback[], totalCount: number }> => {
     try {
-        let url = `/Feedback/Search`;
-
-        const response = await fetchApi(url, {
-            method: "POSt",
+        const response = await fetchApi(`/Feedback/Search`, {
+            method: "POST",
             body: JSON.stringify({
                 pageIndex: page,
                 pageSize: limit,
@@ -74,24 +74,24 @@ const fetchFeedbacks = async (
         });
         return response;
     } catch (error) {
-        console.error('Error fetching feedbacks:', error);
+        console.error('Lỗi khi tải danh sách đánh giá:', error);
         throw error;
     }
 };
 
-// API function to mark feedback as read
+// API đánh dấu đã đọc
 const markFeedbackAsRead = async (id: number): Promise<void> => {
     try {
         await fetchApi(`/Feedback/${id}/MarkAsRead`, {
             method: 'PUT'
         });
     } catch (error) {
-        console.error('Error marking feedback as read:', error);
+        console.error('Lỗi khi đánh dấu đã đọc:', error);
         throw error;
     }
 };
 
-// API function to reply to feedback
+// API gửi phản hồi
 const replyToFeedback = async (id: number, content: string): Promise<void> => {
     try {
         await fetchApi(`/Feedback/${id}/Reply`, {
@@ -101,7 +101,7 @@ const replyToFeedback = async (id: number, content: string): Promise<void> => {
             })
         });
     } catch (error) {
-        console.error('Error replying to feedback:', error);
+        console.error('Lỗi khi gửi phản hồi:', error);
         throw error;
     }
 };
@@ -119,7 +119,6 @@ const FeedbackPage = () => {
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage] = useState(10);
     const [counts, setCounts] = useState({
         all: 0,
         new: 0,
@@ -129,7 +128,7 @@ const FeedbackPage = () => {
 
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    // Function to update counts
+    // Cập nhật số lượng cho các tab
     const updateCounts = useCallback(async () => {
         try {
             const allResponse = await fetchApi('/Feedback/Count');
@@ -144,23 +143,23 @@ const FeedbackPage = () => {
                 responsed: responsedResponse.count || 0
             });
         } catch (err) {
-            console.error("Failed to fetch counts:", err);
+            console.error("Lỗi khi tải số lượng đánh giá:", err);
         }
     }, []);
 
+    // Tải danh sách đánh giá
     const loadFeedbacks = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const result = await fetchFeedbacks(
                 currentPage,
-                itemsPerPage,
+                ItemsPerPage,
                 debouncedSearchTerm,
                 filterStatus
             );
             setFeedbacks(result.items);
             setTotalItems(result.totalCount);
-            // Update counts whenever we load feedbacks
             await updateCounts();
         } catch (err) {
             setError(err instanceof Error ? err.message : "Không thể tải dữ liệu đánh giá");
@@ -168,58 +167,63 @@ const FeedbackPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [debouncedSearchTerm, filterStatus, currentPage, itemsPerPage, updateCounts]);
+    }, [debouncedSearchTerm, filterStatus, currentPage, ItemsPerPage, updateCounts]);
 
+    // Tải dữ liệu khi component mount hoặc các tham số thay đổi
     useEffect(() => {
         loadFeedbacks();
     }, [loadFeedbacks]);
 
-    // Reset to page 1 when search term or filter changes
+    // Reset về trang 1 khi tìm kiếm hoặc thay đổi tab
     useEffect(() => {
         setCurrentPage(1);
     }, [debouncedSearchTerm, filterStatus]);
 
+    // Xem chi tiết đánh giá
     const handleViewDetails = (feedback: Feedback) => {
         setSelectedFeedback(feedback);
         setIsDetailModalOpen(true);
 
-        // If feedback is new, mark it as read automatically when viewed
+        // Nếu đánh giá là mới, tự động đánh dấu đã đọc khi xem
         if (feedback.status === FeedbackStatus.New) {
             handleMarkAsRead(feedback.feedbackId);
         }
     };
 
+    // Đánh dấu đã đọc
     const handleMarkAsRead = async (id: number) => {
         try {
             await markFeedbackAsRead(id);
 
-            // Update the local state
+            // Cập nhật local state
             setFeedbacks(prev =>
                 prev.map(feedback =>
                     feedback.feedbackId === id ? { ...feedback, status: FeedbackStatus.Viewed } : feedback
                 )
             );
 
-            // If the selected feedback is being updated, update it too
+            // Cập nhật selectedFeedback nếu đang được hiển thị
             if (selectedFeedback && selectedFeedback.feedbackId === id) {
                 setSelectedFeedback({ ...selectedFeedback, status: FeedbackStatus.Viewed });
             }
 
-            // Update counts after marking as read
+            // Cập nhật lại số lượng
             await updateCounts();
 
-            toast.success("Đã đánh dấu đánh giá là đã đọc");
+            toast.success("Đã đánh dấu là đã xem");
         } catch (error) {
             toast.error("Không thể cập nhật trạng thái đánh giá");
         }
     };
 
+    // Mở modal phản hồi
     const handleOpenReplyModal = (feedback: Feedback) => {
         setSelectedFeedback(feedback);
-        setReplyContent(feedback.responsedContent || ""); // Pre-fill with existing response if any
+        setReplyContent(feedback.responsedContent || "");
         setIsReplyModalOpen(true);
     };
 
+    // Gửi phản hồi
     const handleSubmitReply = async () => {
         if (!selectedFeedback || !replyContent.trim()) return;
 
@@ -227,24 +231,11 @@ const FeedbackPage = () => {
         try {
             await replyToFeedback(selectedFeedback.feedbackId, replyContent);
 
-            // Update local state
-            const updatedFeedback = {
-                ...selectedFeedback,
-                status: FeedbackStatus.Responsed,
-                responsedContent: replyContent,
-                responsedAt: new Date().toISOString()
-            };
-
-            setFeedbacks(prev =>
-                prev.map(feedback =>
-                    feedback.feedbackId === selectedFeedback.feedbackId ? updatedFeedback : feedback
-                )
-            );
-
-            setSelectedFeedback(updatedFeedback);
-
-            // Update counts
+            // Cập nhật số lượng 
             await updateCounts();
+            
+            // Tải lại danh sách đánh giá thay vì chỉ cập nhật một mục
+            await loadFeedbacks();
 
             toast.success("Phản hồi đã được gửi thành công");
             setIsReplyModalOpen(false);
@@ -255,28 +246,10 @@ const FeedbackPage = () => {
         }
     };
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }).format(date);
-    };
-
-    // Calculate pagination info
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const startItem = (currentPage - 1) * itemsPerPage + 1;
-    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
-
-    // Map filter status to display text
-    const filterDisplayMap = {
-        all: `Tất cả đánh giá (${counts.all})`,
-        new: `Mới (${counts.new})`,
-        viewed: `Đã xem (${counts.viewed})`
-    };
+    // Thông tin phân trang
+    const totalPages = Math.ceil(totalItems / ItemsPerPage);
+    const startItem = (currentPage - 1) * ItemsPerPage + 1;
+    const endItem = Math.min(currentPage * ItemsPerPage, totalItems);
 
     return (
         <>
@@ -288,16 +261,16 @@ const FeedbackPage = () => {
                     ]}
                 />
 
-                {/* Unified container with white background */}
+                {/* Container chính */}
                 <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                    {/* Header section */}
+                    {/* Tiêu đề */}
                     <div className="px-6 py-4 border-b border-gray-200">
                         <h1 className="text-3xl font-bold tracking-tight">
                             Quản lý đánh giá của khách hàng
                         </h1>
                     </div>
 
-                    {/* Search section */}
+                    {/* Tìm kiếm */}
                     <div className="px-6 pt-4 pb-2 border-b border-gray-200">
                         <div className="relative w-full max-w-md">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -310,7 +283,7 @@ const FeedbackPage = () => {
                         </div>
                     </div>
 
-                    {/* Gmail-style tabs - directly above the table with no gap */}
+                    {/* Tabs */}
                     <div className="border-b border-gray-200">
                         <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as FilterStatus)} className="w-full">
                             <TabsList className="h-12 bg-transparent p-0 flex w-full justify-start rounded-none border-0">
@@ -342,7 +315,7 @@ const FeedbackPage = () => {
                         </Tabs>
                     </div>
 
-                    {/* Table area - no padding to connect directly with tabs */}
+                    {/* Bảng dữ liệu */}
                     <div className="pb-0">
                         {isLoading && (
                             <div className="p-8 text-center">
@@ -392,10 +365,10 @@ const FeedbackPage = () => {
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="whitespace-nowrap">
-                                                        {formatDate(feedback.createdAt)}
+                                                        {feedback.createdAt}
                                                     </TableCell>
                                                     <TableCell>
-                                                        {feedback.status === "Responsed" ? (
+                                                        {feedback.status === FeedbackStatus.Responsed ? (
                                                             <span className="text-sm text-green-600">Đã phản hồi</span>
                                                         ) : (
                                                             <span className="text-sm text-gray-500">Chưa phản hồi</span>
@@ -417,18 +390,19 @@ const FeedbackPage = () => {
                                                                     <Eye className="mr-2 h-4 w-4 text-slate-500" />
                                                                     Xem chi tiết
                                                                 </DropdownMenuItem>
-                                                                {feedback.status === "New" && (
+                                                                {feedback.status === FeedbackStatus.New && (
                                                                     <DropdownMenuItem
                                                                         className="cursor-pointer hover:bg-slate-50"
                                                                         onClick={() => handleMarkAsRead(feedback.feedbackId)}
                                                                     >
                                                                         <svg className="mr-2 h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 16a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm1-5.15c0 .34-.28.61-.62.61h-.76c-.34 0-.62-.27-.62-.61V8.85c0-.34.28-.61.62-.61h.76c.34 0 .62.27.62.61z" />
+                                                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                                                            <polyline points="22 4 12 14.01 9 11.01" />
                                                                         </svg>
-                                                                        Đánh dấu đã đọc
+                                                                        Đánh dấu đã xem
                                                                     </DropdownMenuItem>
                                                                 )}
-                                                                {(feedback.status === "New" || feedback.status === "Viewed") && (
+                                                                {(feedback.status === FeedbackStatus.New || feedback.status === FeedbackStatus.Viewed) && (
                                                                     <DropdownMenuItem
                                                                         className="cursor-pointer hover:bg-slate-50"
                                                                         onClick={() => handleOpenReplyModal(feedback)}
@@ -455,8 +429,8 @@ const FeedbackPage = () => {
                         )}
                     </div>
 
-                    {/* Pagination */}
-                    {!isLoading && !error && totalPages > 0 && (
+                    {/* Phân trang */}
+                    {!isLoading && !error && feedbacks.length > 0 && (
                         <div className="flex items-center justify-between px-6 py-3 border-t">
                             <div className="text-sm text-gray-500">
                                 Hiển thị {startItem}-{endItem} trong số {totalItems} đánh giá
@@ -465,7 +439,7 @@ const FeedbackPage = () => {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
                                     className="border-gray-200 text-gray-600"
                                 >
@@ -474,7 +448,7 @@ const FeedbackPage = () => {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                     disabled={currentPage === totalPages}
                                     className="border-gray-200 text-gray-600"
                                 >
@@ -485,7 +459,7 @@ const FeedbackPage = () => {
                     )}
                 </div>
 
-                {/* Feedback Detail Modal */}
+                {/* Modal xem chi tiết */}
                 <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
                     <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
@@ -507,7 +481,7 @@ const FeedbackPage = () => {
                                 <div className="flex justify-between">
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">Ngày tạo</h3>
-                                        <p className="text-sm mt-1">{formatDate(selectedFeedback.createdAt)}</p>
+                                        <p className="text-sm mt-1">{selectedFeedback.createdAt}</p>
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">Trạng thái</h3>
@@ -516,19 +490,19 @@ const FeedbackPage = () => {
                                         </Badge>
                                     </div>
                                 </div>
-                                {selectedFeedback.status === "Responsed" && (
+                                {selectedFeedback.status === FeedbackStatus.Responsed && (
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">Phản hồi</h3>
                                         <div className="bg-blue-50 p-3 rounded-md mt-1 text-sm">
                                             {selectedFeedback.responsedContent}
                                         </div>
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Đã phản hồi lúc: {formatDate(selectedFeedback.responsedAt || "")}
+                                            Đã phản hồi lúc: {selectedFeedback.responsedAt || ""}
                                         </p>
                                     </div>
                                 )}
                                 <DialogFooter className="mt-6">
-                                    {(selectedFeedback.status === "New" || selectedFeedback.status === "Viewed") && (
+                                    {(selectedFeedback.status === FeedbackStatus.New || selectedFeedback.status === FeedbackStatus.Viewed) && (
                                         <Button
                                             onClick={() => {
                                                 setIsDetailModalOpen(false);
@@ -548,7 +522,7 @@ const FeedbackPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* Reply Modal */}
+                {/* Modal phản hồi */}
                 <Dialog open={isReplyModalOpen} onOpenChange={setIsReplyModalOpen}>
                     <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>

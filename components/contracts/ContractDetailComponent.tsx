@@ -348,7 +348,7 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                                                 'bg-gray-200 text-gray-900 border border-gray-300'
                                                         }`}>
                                                         {paymentContract.status === PaymentContractStatus.Approved ? 'Đã chấp nhận' :
-                                                            paymentContract.status === PaymentContractStatus.Complete ? 'Hoàn tất' :
+                                                            paymentContract.status === PaymentContractStatus.Completed ? 'Hoàn tất' :
                                                                 paymentContract.status === PaymentContractStatus.Rejected ? 'Bị từ chối' :
                                                                     paymentContract.status}
                                                     </span>

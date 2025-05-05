@@ -645,7 +645,7 @@ export default function CustomerDetailPage() {
                                   <>
                                     <Separator className="my-3" />
                                     <div className="space-y-2">
-                                      <h5 className="text-xs font-medium text-gray-500">Thông tin ra vào</h5>
+                                      <h5 className="text-xs font-medium text-gray-500">Thông tin xe vào</h5>
                                       <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div className="flex items-center gap-1.5">
                                           <Calendar className="h-3.5 w-3.5 text-gray-400" />
@@ -658,7 +658,9 @@ export default function CustomerDetailPage() {
                                       </div>
                                       <div className="flex items-center gap-1.5 text-sm">
                                         <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                                        <span>{vehicle.entrance.parkingSpaceName}, {vehicle.entrance.floorName}</span>
+                                        <span>
+                                          {vehicle.entrance.parkingSpaceName}, {vehicle.entrance.floorName}, {vehicle.entrance.areaName}, {vehicle.entrance.parkingLotName}
+                                        </span>
                                       </div>
                                       <div className="mt-1">
                                         <Badge
