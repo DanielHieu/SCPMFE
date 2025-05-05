@@ -143,7 +143,12 @@ export function ParkingLotsTable({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    // enable sorting etc. if needed
+      // enable sorting etc. if needed
+   initialState: {
+          pagination: {
+              pageSize: 10, // Set a fixed number of items per page
+          },
+      },
   });
 
   return (
