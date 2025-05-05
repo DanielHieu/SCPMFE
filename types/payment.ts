@@ -19,5 +19,5 @@ export enum PaymentContractStatus {
   Approved = "Approved",
   Rejected = "Rejected",
   Paid = "Paid",
-  Complete = "Complete",
+  Complete = "Completed",
 }
