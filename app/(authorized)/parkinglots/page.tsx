@@ -6,7 +6,6 @@ import {
   searchParkingLots,
   addParkingLot,
   updateParkingLot,
-  deleteParkingLot,
 } from "@/lib/api";
 import {
   ParkingLot,
@@ -112,19 +111,6 @@ export default function ParkingLotsPage() {
     }
   };
 
-  const handleDeleteClick = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa bãi đỗ xe này? Hành động này không thể hoàn tác.")) {
-      setIsLoading(true);
-      try {
-        await deleteParkingLot(id);
-        toast.success("Bãi đỗ xe đã được xóa thành công");
-        refreshData();
-      } catch (err) {
-        toast.error(`Lỗi: ${err instanceof Error ? err.message : "Không thể xóa bãi đỗ xe"}`);
-        setIsLoading(false);
-      }
-    }
-  };
 
   // Calculate statistics
   const totalLots = parkingLots.length;
@@ -260,7 +246,6 @@ export default function ParkingLotsPage() {
               <ParkingLotsTable
                 lots={parkingLots}
                 onEditAction={handleEditClick}
-                onDeleteAction={handleDeleteClick}
               />
             )}
           </div>

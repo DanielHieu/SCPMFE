@@ -31,7 +31,6 @@ import Link from "next/link";
 interface ParkingLotsTableProps {
   lots: ParkingLot[];
   onEditAction: (lot: ParkingLot) => void;
-  onDeleteAction: (id: number) => void;
 }
 
 // Helper function (move to utils)
@@ -43,7 +42,6 @@ const formatCurrency = (value: number | null | undefined) => {
 export function ParkingLotsTable({
   lots,
   onEditAction,
-  onDeleteAction,
 }: ParkingLotsTableProps) {
   // ... table state (sorting etc.) ...
 
@@ -122,12 +120,6 @@ export function ParkingLotsTable({
                   >
                     <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="cursor-pointer text-red-600"
-                    onClick={() => onDeleteAction(lot.parkingLotId)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" /> Xóa
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -135,7 +127,7 @@ export function ParkingLotsTable({
         },
       },
     ],
-    [onEditAction, onDeleteAction],
+    [onEditAction],
   );
 
   const table = useReactTable({
