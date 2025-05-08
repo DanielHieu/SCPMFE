@@ -36,6 +36,7 @@ import { fetchApi } from "@/lib/api/api-helper";
 import { Feedback, FeedbackStatus } from "@/types/feedback";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+import { getFeedbackCountStats } from "@/lib/api/feedback.api";
 
 const ItemsPerPage = 10;
 
@@ -131,21 +132,28 @@ const FeedbackPage = () => {
     // Cập nhật số lượng cho các tab
     const updateCounts = useCallback(async () => {
         try {
-            const allResponse = await fetchApi('/Feedback/Count');
-            const newResponse = await fetchApi('/Feedback/Count?status=New');
-            const viewedResponse = await fetchApi('/Feedback/Count?status=Viewed');
-            const responsedResponse = await fetchApi('/Feedback/Count?status=Responsed');
-
+            // Sử dụng API mới để lấy số liệu thống kê
+            const countStats = await getFeedbackCountStats();
+            
+            // Cập nhật state với số liệu thống kê
             setCounts({
-                all: allResponse.count || 0,
-                new: newResponse.count || 0,
-                viewed: viewedResponse.count || 0,
-                responsed: responsedResponse.count || 0
+                all: countStats.all || 0,
+                new: countStats.new || 0,
+                viewed: countStats.viewed || 0,
+                responsed: countStats.responsed || 0
             });
         } catch (err) {
             console.error("Lỗi khi tải số lượng đánh giá:", err);
+            
+            // Phương pháp dự phòng: sử dụng kết quả hiện tại nếu có
+            if (filterStatus === "All" && !debouncedSearchTerm) {
+                setCounts(prev => ({
+                    ...prev,
+                    all: totalItems || prev.all
+                }));
+            }
         }
-    }, []);
+    }, [totalItems, filterStatus, debouncedSearchTerm]);
 
     // Tải danh sách đánh giá
     const loadFeedbacks = useCallback(async () => {
@@ -160,7 +168,24 @@ const FeedbackPage = () => {
             );
             setFeedbacks(result.items);
             setTotalItems(result.totalCount);
-            await updateCounts();
+            
+            if (!debouncedSearchTerm) {
+                await updateCounts();
+            } else {
+                setCounts(prev => {
+                    const updatedCounts = { ...prev };
+                    if (filterStatus === "All") {
+                        updatedCounts.all = result.totalCount;
+                    } else if (filterStatus === FeedbackStatus.New) {
+                        updatedCounts.new = result.totalCount;
+                    } else if (filterStatus === FeedbackStatus.Viewed) {
+                        updatedCounts.viewed = result.totalCount;
+                    } else if (filterStatus === FeedbackStatus.Responsed) {
+                        updatedCounts.responsed = result.totalCount;
+                    }
+                    return updatedCounts;
+                });
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Không thể tải dữ liệu đánh giá");
             setFeedbacks([]);
@@ -207,7 +232,14 @@ const FeedbackPage = () => {
                 setSelectedFeedback({ ...selectedFeedback, status: FeedbackStatus.Viewed });
             }
 
-            // Cập nhật lại số lượng
+            // Cập nhật số lượng trên client trước khi gọi API
+            setCounts(prev => ({
+                ...prev,
+                new: Math.max(0, prev.new - 1),
+                viewed: prev.viewed + 1
+            }));
+
+            // Sau đó cập nhật lại số lượng từ server để đảm bảo chính xác
             await updateCounts();
 
             toast.success("Đã đánh dấu là đã xem");
@@ -231,9 +263,24 @@ const FeedbackPage = () => {
         try {
             await replyToFeedback(selectedFeedback.feedbackId, replyContent);
 
-            // Cập nhật số lượng 
+            // Cập nhật số lượng trên client trước khi gọi API
+            setCounts(prev => {
+                const updatedCounts = { ...prev };
+                updatedCounts.responsed = prev.responsed + 1;
+                
+                // Giảm số lượng của trạng thái trước đó
+                if (selectedFeedback.status === FeedbackStatus.New) {
+                    updatedCounts.new = Math.max(0, prev.new - 1);
+                } else if (selectedFeedback.status === FeedbackStatus.Viewed) {
+                    updatedCounts.viewed = Math.max(0, prev.viewed - 1);
+                }
+                
+                return updatedCounts;
+            });
+
+            // Cập nhật số lượng từ server để đảm bảo chính xác
             await updateCounts();
-            
+
             // Tải lại danh sách đánh giá thay vì chỉ cập nhật một mục
             await loadFeedbacks();
 
