@@ -45,7 +45,7 @@ const sidebarItems: NavItem[] = [
   { label: "Hợp đồng", href: "/contracts", icon: FileText },
   { label: "Bãi đậu xe", href: "/parkinglots", icon: ParkingSquare },
   { label: "Nhiệm vụ", href: "/tasks", icon: ClipboardList },
-  { label: "Cảm biến trạng thái", href: "/sensors", icon: Wifi },
+  { label: "Quản lý cảm biến", href: "/sensors", icon: Wifi },
   { label: "Đánh giá", href:"/feedbacks", icon: Contact }
 ];
 

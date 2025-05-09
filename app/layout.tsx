@@ -2,8 +2,8 @@ import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 
 export const metadata = {
-  title: "SCPM Admin",
-  description: "Smart Car Parking Management Admin",
+  title: "Quản lý hệ thống SCPM",
+  description: "Smart Car Parking Management",
 };
 
 export default function RootLayout({

@@ -31,8 +31,8 @@ const GeneralTabContent = () => {
                 className="border-l-green-600"
             />
             <SummaryCard
-                title="Hợp đồng đang hoạt động"
-                value={summaryData?.totalContracts || 0}
+                title="Hợp đồng đang hiệu lực"
+                value={summaryData?.totalActiveContracts || 0}
                 icon={<FileText className="h-4 w-4 text-amber-600" />}
                 className="border-l-amber-600"
             />
@@ -43,9 +43,8 @@ const GeneralTabContent = () => {
                 className="border-l-purple-600"
             />
         </div >
-
         {/* Stats Cards */}
-        < div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" >
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" >
             <StatsCard
                 title="Doanh thu tháng này"
                 value={formatCurrency(summaryData?.totalRevenueInMonth || 0)}
@@ -60,14 +59,14 @@ const GeneralTabContent = () => {
             />
             <StatsCard
                 title="Khách hàng hoạt động"
-                value={summaryData?.totalCustomers || 0}
-                description={`${((summaryData?.totalCustomers || 0) / (summaryData?.totalCustomers || 1) * 100).toFixed(1)}% tổng khách hàng`}
+                value={summaryData?.totalAvailableCustomers || 0}
+                description={`${((summaryData?.totalAvailableCustomers || 0) / (summaryData?.totalCustomers || 1) * 100).toFixed(1)}% tổng khách hàng`}
                 icon={Users}
             />
             <StatsCard
-                title="Tỷ lệ hợp đồng hoạt động"
-                value={`${((summaryData?.totalContracts || 0) / (summaryData?.totalContracts || 1) * 100).toFixed(1)}%`}
-                description={`${summaryData?.totalContracts || 0}/${summaryData?.totalContracts || 0} hợp đồng`}
+                title="Tỷ lệ hợp đồng hiệu lực"
+                value={`${((summaryData?.totalActiveContracts || 0) / (summaryData?.totalContracts || 1) * 100).toFixed(1)}%`}
+                description={`${summaryData?.totalActiveContracts || 0}/${summaryData?.totalContracts || 0} hợp đồng`}
                 icon={Percent}
             />
         </div >

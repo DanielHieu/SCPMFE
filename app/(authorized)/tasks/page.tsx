@@ -27,10 +27,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import useDebounce from "@/hooks/useDebounce";
-import { fetchApi } from "@/lib/api/api-helper";
-import { AddTaskPayload, Task, UpdateTaskPayload } from "@/types/taskEach";
-import { Staff } from "@/types";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -39,6 +35,26 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    ColumnDef,
+    flexRender,
+    getCoreRowModel,
+    getPaginationRowModel,
+    useReactTable,
+} from "@tanstack/react-table";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { DateInput } from "@/components/ui/date-input";
+import useDebounce from "@/hooks/useDebounce";
+import { fetchApi } from "@/lib/api/api-helper";
+import { AddTaskPayload, Task, UpdateTaskPayload } from "@/types/taskEach";
+import { Staff } from "@/types";
 
 type FilterStatus = "All" | "Pending" | "InProgress" | "Completed";
 
@@ -164,6 +180,123 @@ export default function TasksPage() {
             return matchesSearch && task.status === filterStatus;
         });
     }, [tasks, filterStatus, debouncedSearchTerm]);
+
+    // Define table columns
+    const columns = useMemo<ColumnDef<Task>[]>(() => [
+        {
+            accessorKey: "title",
+            header: "Tiêu đề",
+            cell: ({ row }) => (
+                <div>
+                    <div className="font-medium text-gray-900">{row.original.title}</div>
+                    <div className="text-sm text-gray-500 truncate max-w-xs">
+                        {row.original.description}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "assigneeName",
+            header: "Nhân viên xử lý",
+            cell: ({ row }) => (
+                <div className="text-sm text-gray-900">{row.original.assigneeName}</div>
+            ),
+        },
+        {
+            accessorKey: "status",
+            header: "Trạng thái",
+            cell: ({ row }) => getStatusBadge(row.original.status),
+        },
+        {
+            accessorKey: "priority",
+            header: "Ưu tiên",
+            cell: ({ row }) => getPriorityBadge(row.original.priority),
+        },
+        {
+            accessorKey: "dates",
+            header: "Thời gian",
+            cell: ({ row }) => (
+                <div className="text-sm text-gray-500">
+                    {formatDate(row.original.startDate)} - {formatDate(row.original.endDate)}
+                </div>
+            ),
+        },
+        {
+            id: "actions",
+            header: () => <div className="text-right">Thao tác</div>,
+            cell: ({ row }) => {
+                const task = row.original;
+                return (
+                    <div className="flex justify-end">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Mở menu</span>
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        setViewingTask(task);
+                                        setIsViewModalOpen(true);
+                                    }}
+                                    className="flex items-center cursor-pointer"
+                                >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Xem chi tiết
+                                </DropdownMenuItem>
+                                {task.status === 'Pending' && (
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            const taskForEdit = {
+                                                ...task,
+                                                startDate: task.startDate || new Date().toISOString().split('T')[0],
+                                                endDate: task.endDate || new Date().toISOString().split('T')[0]
+                                            };
+                                            setEditingTask(taskForEdit);
+                                            setIsEditModalOpen(true);
+                                        }}
+                                        className="flex items-center cursor-pointer"
+                                    >
+                                        <Edit2 className="h-4 w-4 mr-2" />
+                                        Chỉnh sửa
+                                    </DropdownMenuItem>
+                                )}
+                                {(task.status === 'Pending' || task.status === 'InProgress') && (
+                                    <DropdownMenuItem
+                                        className="flex items-center cursor-pointer text-red-600 hover:text-red-800 focus:text-red-800"
+                                        onClick={() => {
+                                            setDeletingTask(task);
+                                            setIsDeleteModalOpen(true);
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Xóa
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                );
+            },
+        },
+    ], []);
+
+    // Create table instance
+    const table = useReactTable({
+        data: filteredTasks,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        initialState: {
+            pagination: {
+                pageSize: 10,
+            },
+        },
+    });
 
     const refreshData = useCallback(() => {
         fetchTasks();
@@ -332,34 +465,6 @@ export default function TasksPage() {
         }
     };
 
-    // Format date for input type="date" (YYYY-MM-DD)
-    const formatDateInput = (dateString: string) => {
-        if (!dateString) return "";
-
-        try {
-            // Check if the date is in dd/MM/yyyy format
-            if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                const [day, month, year] = dateString.split('/').map(Number);
-                // Fix timezone issue by using direct date construction with local time
-                return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-            }
-
-            // Handle standard date format
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return dateString;
-
-            // Fix timezone issue by extracting date parts directly
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-
-            return `${year}-${month}-${day}`;
-        } catch (error) {
-            console.error("Error formatting date for input:", error);
-            return dateString;
-        }
-    };
-
     // Format date for display as dd/MM/yyyy
     const formatDate = (dateString: string) => {
         if (!dateString) return "";
@@ -390,7 +495,7 @@ export default function TasksPage() {
         switch (status) {
             case 'Pending':
                 return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                    <Clock className="w-3 h-3 mr-1" /> Chờ xử lý
+                    <Clock className="w-3 h-3 mr-1" /> Chờ thực hiện
                 </Badge>;
             case 'InProgress':
                 return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -418,18 +523,6 @@ export default function TasksPage() {
                 return null;
         }
     };
-
-    // Debug effect for editingTask date values
-    useEffect(() => {
-        if (editingTask) {
-            console.log("Editing task dates:", {
-                startDate: editingTask.startDate,
-                endDate: editingTask.endDate,
-                formattedStartDate: formatDateInput(editingTask.startDate),
-                formattedEndDate: formatDateInput(editingTask.endDate)
-            });
-        }
-    }, [editingTask]);
 
     // Handle deleting a task
     const handleDeleteTask = async (taskId: number) => {
@@ -509,7 +602,7 @@ export default function TasksPage() {
                                 value="Pending"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
-                                Chờ xử lý ({counts.pending})
+                                Chờ thực hiện ({counts.pending})
                             </TabsTrigger>
                             <TabsTrigger
                                 key="InProgress"
@@ -566,106 +659,70 @@ export default function TasksPage() {
                         </div>
                     )}
                     {!isLoading && !error && filteredTasks.length > 0 && (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b">
-                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                                            Tiêu đề
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                                            Nhân viên xử lý
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                                            Trạng thái
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                                            Ưu tiên
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                                            Thời gian
-                                        </th>
-                                        <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
-                                            Thao tác
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredTasks.map((task) => (
-                                        <tr key={task.taskEachId} className="border-b hover:bg-muted/50">
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium text-gray-900">{task.title}</div>
-                                                <div className="text-sm text-gray-500 truncate max-w-xs">
-                                                    {task.description}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="text-sm text-gray-900">{task.assigneeName}</div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {getStatusBadge(task.status)}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {getPriorityBadge(task.priority)}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-500">
-                                                <div>{task.startDate} - {task.endDate}</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-sm font-medium">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                            <span className="sr-only">Mở menu</span>
-                                                            <MoreVertical className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            onClick={() => {
-                                                                setViewingTask(task);
-                                                                setIsViewModalOpen(true);
-                                                            }}
-                                                            className="flex items-center cursor-pointer"
-                                                        >
-                                                            <Eye className="h-4 w-4 mr-2" />
-                                                            Xem chi tiết
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={() => {
-                                                                // Make sure to format dates correctly when setting the editing task
-                                                                const taskForEdit = {
-                                                                    ...task,
-                                                                    startDate: task.startDate || new Date().toISOString().split('T')[0],
-                                                                    endDate: task.endDate || new Date().toISOString().split('T')[0]
-                                                                };
-                                                                setEditingTask(taskForEdit);
-                                                                setIsEditModalOpen(true);
-                                                            }}
-                                                            className="flex items-center cursor-pointer"
-                                                        >
-                                                            <Edit2 className="h-4 w-4 mr-2" />
-                                                            Chỉnh sửa
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            className="flex items-center cursor-pointer text-red-600 hover:text-red-800 focus:text-red-800"
-                                                            onClick={() => {
-                                                                setDeletingTask(task);
-                                                                setIsDeleteModalOpen(true);
-                                                            }}
-                                                        >
-                                                            <Trash2 className="h-4 w-4 mr-2" />
-                                                            Xóa
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <>
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        {table.getHeaderGroups().map((headerGroup) => (
+                                            <TableRow key={headerGroup.id}>
+                                                {headerGroup.headers.map((header) => (
+                                                    <TableHead key={header.id} className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                                        {header.isPlaceholder
+                                                            ? null
+                                                            : flexRender(
+                                                                header.column.columnDef.header,
+                                                                header.getContext()
+                                                            )}
+                                                    </TableHead>
+                                                ))}
+                                            </TableRow>
+                                        ))}
+                                    </TableHeader>
+                                    <TableBody>
+                                        {table.getRowModel().rows.map((row) => (
+                                            <TableRow key={row.id} className="border-b hover:bg-muted/50">
+                                                {row.getVisibleCells().map((cell) => (
+                                                    <TableCell key={cell.id} className="px-4 py-3">
+                                                        {flexRender(
+                                                            cell.column.columnDef.cell,
+                                                            cell.getContext()
+                                                        )}
+                                                    </TableCell>
+                                                ))}
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Pagination Controls */}
+                            <div className="flex items-center justify-between px-6 py-3 border-t">
+                                <div className="text-sm text-gray-500">
+                                    Hiển thị {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+                                    {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredTasks.length)} trong số {filteredTasks.length} nhiệm vụ
+                                </div>
+                                <div className="space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => table.previousPage()}
+                                        disabled={!table.getCanPreviousPage()}
+                                        className="border-gray-200 text-gray-600"
+                                    >
+                                        Trước
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => table.nextPage()}
+                                        disabled={!table.getCanNextPage()}
+                                        className="border-gray-200 text-gray-600"
+                                    >
+                                        Tiếp
+                                    </Button>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
 
@@ -799,38 +856,34 @@ export default function TasksPage() {
 
                                 {/* Thời gian */}
                                 <div className="space-y-2 col-span-1">
-                                    <Label htmlFor="startDate" className="text-sm font-medium">Ngày bắt đầu</Label>
-                                    <Input
+                                    <DateInput
                                         id="startDate"
-                                        type="date"
-                                        className="w-full"
-                                        value={newTask.startDate}
-                                        onChange={(e) => {
-                                            setNewTask({ ...newTask, startDate: e.target.value });
+                                        label="Ngày bắt đầu"
+                                        value={newTask.startDate || ""}
+                                        onChange={(value) => {
+                                            setNewTask({ ...newTask, startDate: value });
                                             if (newTask.endDate) {
-                                                validateDates(e.target.value, newTask.endDate);
+                                                validateDates(value, newTask.endDate);
                                             }
                                         }}
+                                        required
                                     />
                                 </div>
                                 <div className="space-y-2 col-span-1">
-                                    <Label htmlFor="endDate" className="text-sm font-medium">Ngày kết thúc</Label>
-                                    <Input
+                                    <DateInput
                                         id="endDate"
-                                        type="date"
-                                        className={`w-full ${dateError ? "border-red-500" : ""}`}
-                                        value={newTask.endDate}
-                                        min={newTask.startDate}
-                                        onChange={(e) => {
-                                            setNewTask({ ...newTask, endDate: e.target.value });
+                                        label="Ngày kết thúc"
+                                        value={newTask.endDate || ""}
+                                        onChange={(value) => {
+                                            setNewTask({ ...newTask, endDate: value });
                                             if (newTask.startDate) {
-                                                validateDates(newTask.startDate, e.target.value);
+                                                validateDates(newTask.startDate, value);
                                             }
                                         }}
+                                        min={newTask.startDate}
+                                        error={dateError || undefined}
+                                        required
                                     />
-                                    {dateError && (
-                                        <p className="text-red-500 text-xs mt-1">{dateError}</p>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -989,60 +1042,46 @@ export default function TasksPage() {
 
                                         {/* Thời gian */}
                                         <div className="space-y-2 col-span-1">
-                                            <Label htmlFor="edit-startDate" className="text-sm font-medium">
-                                                Ngày bắt đầu
-                                            </Label>
-                                            <Input
+                                            <DateInput
                                                 id="edit-startDate"
-                                                type="date"
-                                                className="w-full"
-                                                value={formatDateInput(editingTask.startDate)}
-                                                onChange={(e) => {
-                                                    const newDate = e.target.value;
-                                                    console.log("Setting new start date:", newDate);
+                                                label="Ngày bắt đầu"
+                                                value={editingTask.startDate || ""}
+                                                onChange={(value) => {
                                                     setEditingTask(prev => {
                                                         if (!prev) return prev;
                                                         return {
                                                             ...prev,
-                                                            startDate: newDate
+                                                            startDate: value
                                                         };
                                                     });
                                                     if (editingTask.endDate) {
-                                                        validateDates(newDate, editingTask.endDate);
+                                                        validateDates(value, editingTask.endDate);
                                                     }
                                                 }}
+                                                required
                                             />
                                         </div>
                                         <div className="space-y-2 col-span-1">
-                                            <Label htmlFor="edit-endDate" className="text-sm font-medium">
-                                                Ngày kết thúc
-                                            </Label>
-                                            <Input
+                                            <DateInput
                                                 id="edit-endDate"
-                                                type="date"
-                                                className={`w-full ${dateError ? "border-red-500" : ""}`}
-                                                value={formatDateInput(editingTask.endDate)}
-                                                min={formatDateInput(editingTask.startDate)}
-                                                onChange={(e) => {
-                                                    const newDate = e.target.value;
-                                                    console.log("Setting new end date:", newDate);
+                                                label="Ngày kết thúc"
+                                                value={editingTask.endDate || ""}
+                                                onChange={(value) => {
                                                     setEditingTask(prev => {
                                                         if (!prev) return prev;
                                                         return {
                                                             ...prev,
-                                                            endDate: newDate
+                                                            endDate: value
                                                         };
                                                     });
                                                     if (editingTask.startDate) {
-                                                        validateDates(editingTask.startDate, newDate);
+                                                        validateDates(editingTask.startDate, value);
                                                     }
                                                 }}
-                                                // Format display as dd/MM/yyyy but keep ISO format for value
-                                                data-date-format="DD/MM/YYYY"
+                                                min={editingTask.startDate}
+                                                error={dateError || undefined}
+                                                required
                                             />
-                                            {dateError && (
-                                                <p className="text-red-500 text-xs mt-1">{dateError}</p>
-                                            )}
                                         </div>
                                     </div>
                                 </div>

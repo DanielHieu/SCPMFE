@@ -10,7 +10,7 @@ import Link from "next/link";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 
-type FilterStatus = "All" | "Active" | "Expired" | "Inactive" | "PendingActivation";
+type FilterStatus = "All" | "Active" | "Expired" | "Inactive" | "PendingActivation" | "Cancelled";
 
 export default function ContractsPage() {
     const [contracts, setContracts] = useState<Contract[]>([]);
@@ -24,6 +24,7 @@ export default function ContractsPage() {
         expired: 0,
         inactive: 0,
         pendingActivation: 0,
+        cancelled: 0
     });
 
     // Hàm lấy class cho badge dựa vào trạng thái hợp đồng
@@ -37,6 +38,8 @@ export default function ContractsPage() {
                 return "bg-yellow-100 text-yellow-800";
             case ContractStatus.PendingActivation:
                 return "bg-blue-100 text-blue-800";
+            case ContractStatus.Cancelled:
+                return "bg-red-100 text-red-800";
             default:
                 return "bg-gray-100 text-gray-800";
         }
@@ -48,24 +51,26 @@ export default function ContractsPage() {
             case ContractStatus.Active:
                 return "Đang hiệu lực";
             case ContractStatus.Expired:
-                return "Đã hết hạn";
+                return "Hết hiệu lực";
             case ContractStatus.Inactive:
                 return "Chờ xử lý";
             case ContractStatus.PendingActivation:
-                return "Chờ kích hoạt";
+                return "Chờ hiệu lực";
+            case ContractStatus.Cancelled:
+                return "Đã hủy";
             default:
                 return status;
         }
     };
 
     // Fetch contracts data
-    const fetchContracts = async () => {
+    const fetchContracts = async (keyword = "") => {
         setIsLoading(true);
         setError(null);
         try {
             // Replace with actual API call
             const contracts = await searchContracts({
-                keyword: "",
+                keyword: keyword,
             });
 
             setContracts(contracts || []);
@@ -77,6 +82,7 @@ export default function ContractsPage() {
                 expired: contracts.filter((c) => c.status === ContractStatus.Expired).length,
                 inactive: contracts.filter((c) => c.status === ContractStatus.Inactive).length,
                 pendingActivation: contracts.filter((c) => c.status === ContractStatus.PendingActivation).length,
+                cancelled: contracts.filter((c) => c.status === ContractStatus.Cancelled).length,
             };
 
             setCounts(newCounts);
@@ -91,19 +97,31 @@ export default function ContractsPage() {
         fetchContracts();
     }, []);
 
+    // Add debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchContracts(searchTerm);
+        }, 1000); // Delay 500ms to avoid too many requests
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     // Filter contracts based on search term and filter status
     const filteredContracts = useMemo(() => {
         return contracts.filter((contract) => {
-            const matchesSearch =
-                contract.parkingSpaceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                contract.car.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesSearch = searchTerm === "" ||
+                contract.parkingSpaceName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                contract.car?.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                String(contract.contractId).includes(searchTerm) ||
+                contract.car?.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesFilter =
                 filterStatus === "All" ||
                 (filterStatus === "Active" && contract.status === ContractStatus.Active) ||
                 (filterStatus === "Expired" && contract.status === ContractStatus.Expired) ||
                 (filterStatus === "Inactive" && contract.status === ContractStatus.Inactive) ||
-                (filterStatus === "PendingActivation" && contract.status === ContractStatus.PendingActivation);
+                (filterStatus === "PendingActivation" && contract.status === ContractStatus.PendingActivation) ||
+                (filterStatus === "Cancelled" && contract.status === ContractStatus.Cancelled);
 
             return matchesSearch && matchesFilter;
         });
@@ -225,8 +243,8 @@ export default function ContractsPage() {
                                                 <td className="px-6 py-4">{contract.startDateString}</td>
                                                 <td className="px-6 py-4">{contract.endDateString}</td>
                                                 <td className="px-6 py-4">
-                                                    <Badge 
-                                                        variant="secondary" 
+                                                    <Badge
+                                                        variant="secondary"
                                                         className={getContractStatusStyle(contract.status)}
                                                     >
                                                         {getContractStatusText(contract.status)}
