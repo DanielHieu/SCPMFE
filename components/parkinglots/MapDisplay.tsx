@@ -1,17 +1,28 @@
 // components/features/parking-lots/[lotId]/MapDisplay.tsx
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-// Import necessary components from the library
-import {
-  APIProvider,
-  Map,
-  AdvancedMarker,
-  Pin,
-  useMapsLibrary,
-  MapCameraChangedEvent
-} from "@vis.gl/react-google-maps";
+import React, { useState, useEffect } from "react";
+import dynamic from 'next/dynamic';
+import 'leaflet/dist/leaflet.css';
 import { AlertTriangle, MapPin } from "lucide-react";
+
+// Dynamic import for Leaflet components to avoid SSR issues
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
 
 interface MapDisplayProps {
   lat: number;
@@ -22,82 +33,69 @@ interface MapDisplayProps {
 export function MapDisplay({ lat, long, address }: MapDisplayProps) {
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const mapRef = useRef<google.maps.Map | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const [L, setL] = useState<any>(null);
+  const [parkingIcon, setParkingIcon] = useState<any>(null);
 
   // Use valid coordinates or default to a fallback location (e.g., HCMC center)
-  const defaultPosition = {
-    lat: 10.7769, // Ho Chi Minh City approx latitude
-    lng: 106.7009, // Ho Chi Minh City approx longitude
-  };
-  const position = lat && long ? { lat: lat, lng: long } : defaultPosition;
+  const defaultPosition: [number, number] = [10.7769, 106.7009]; // Ho Chi Minh City
+  const position: [number, number] = lat && long ? [lat, long] : defaultPosition;
   const zoom = lat && long ? 15 : 10; // Zoom in more if coords are valid
 
-  const apiKey = process.env.NEXT_PUBLIC_Maps_API_KEY;
-
-  // Simulate checking if map has loaded correctly
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    // Ensure we're on client side
+    setIsClient(true);
     
-    if (!apiKey) {
-      setMapError("Google Maps API Key is missing. Check .env.local file (NEXT_PUBLIC_Maps_API_KEY).");
-      setIsLoading(false);
-      return;
-    }
-    
-    // Set a timeout to detect loading issues
-    timeoutId = setTimeout(() => {
-      if (isLoading) {
+    // Dynamic import Leaflet and setup icons
+    const setupLeaflet = async () => {
+      try {
+        // Import Leaflet
+        const leaflet = await import('leaflet');
+        
+        // Fix for default markers in react-leaflet
+        delete (leaflet.Icon.Default.prototype as any)._getIconUrl;
+        leaflet.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        });
+
+        // Create custom parking icon
+        const icon = new leaflet.Icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        });
+
+        setL(leaflet);
+        setParkingIcon(icon);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading Leaflet:', error);
+        setMapError('Không thể tải bản đồ. Vui lòng thử lại sau.');
         setIsLoading(false);
       }
-    }, 5000); // 5 second timeout
-    
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [apiKey, isLoading]);
-
-  // Handle map loading state and errors
-  const handleMapCameraChanged = (event: MapCameraChangedEvent) => {
-    if (isLoading) {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Add error handling for the script loading
-    const handleMapError = () => {
-      console.error("Google Maps failed to load");
-      setMapError("Không thể tải bản đồ. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.");
-      setIsLoading(false);
     };
 
-    // Detect if Google Maps API failed to load
-    if (typeof window !== 'undefined') {
-      window.addEventListener('error', (event) => {
-        if (event.target && (event.target as HTMLElement).tagName === 'SCRIPT') {
-          const src = (event.target as HTMLScriptElement).src || '';
-          if (src.includes('maps.googleapis.com')) {
-            handleMapError();
-          }
-        }
-      }, { capture: true });
-    }
-
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('error', () => {});
-      }
-    };
+    setupLeaflet();
   }, []);
 
-  // If API key is missing, show error
-  if (!apiKey) {
+  // Handle map loading errors
+  const handleMapError = () => {
+    setMapError("Không thể tải bản đồ. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.");
+    setIsLoading(false);
+  };
+
+  // Don't render anything on server side
+  if (!isClient) {
     return (
-      <div className="h-full w-full bg-red-50 flex flex-col items-center justify-center p-6 border border-red-300 rounded-lg">
-        <AlertTriangle className="h-10 w-10 text-red-500 mb-2" />
-        <div className="text-center">
-          <h3 className="text-red-700 font-medium mb-1">Lỗi cấu hình bản đồ</h3>
-          <p className="text-red-600 text-sm">Thiếu API Key của Google Maps. Vui lòng kiểm tra tệp cấu hình .env.local</p>
+      <div className="h-full w-full bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-800"></div>
+          <p className="mt-4 text-gray-600">Đang khởi tạo bản đồ...</p>
         </div>
       </div>
     );
@@ -131,7 +129,7 @@ export function MapDisplay({ lat, long, address }: MapDisplayProps) {
   }
 
   // Show loading state
-  if (isLoading) {
+  if (isLoading || !L || !parkingIcon) {
     return (
       <div className="h-full w-full bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center">
@@ -144,47 +142,51 @@ export function MapDisplay({ lat, long, address }: MapDisplayProps) {
 
   return (
     <div className="h-full w-full relative">
-      {/* Catch any render errors with an error boundary */}
-      <ErrorBoundary fallback={
-        <div className="h-full w-full bg-red-50 flex items-center justify-center p-4 text-red-600 border border-red-300 rounded-lg">
-          <AlertTriangle className="h-5 w-5 mr-2" />
-          Lỗi hiển thị bản đồ
-        </div>
-      }>
-        <APIProvider apiKey={apiKey}>
-          <div style={{ height: "100%", width: "100%" }}>
-            <Map
-              defaultCenter={position}
-              defaultZoom={zoom}
-              mapId="parkingLotMap"
-              gestureHandling={"greedy"}
-              disableDefaultUI={true}
-              onCameraChanged={handleMapCameraChanged}
-            >
-              {lat && long && (
-                <AdvancedMarker
-                  position={position}
-                  title={address || "Vị trí bãi đỗ xe"}
-                >
-                  <Pin
-                    background={"#1E90FF"}
-                    glyphColor={"#FFFFFF"}
-                    borderColor={"#1E90FF"}
-                  />
-                </AdvancedMarker>
-              )}
-            </Map>
+      <ErrorBoundary 
+        fallback={
+          <div className="h-full w-full bg-red-50 flex items-center justify-center p-4 text-red-600 border border-red-300 rounded-lg">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            Lỗi hiển thị bản đồ
           </div>
-        </APIProvider>
+        }
+        onError={handleMapError}
+      >
+        <MapContainer
+          center={position}
+          zoom={zoom}
+          scrollWheelZoom={true}
+          style={{ height: "100%", width: "100%" }}
+          className="rounded-lg z-0"
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {lat && long && (
+            <Marker position={position} icon={parkingIcon}>
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-medium text-gray-900 mb-1">
+                    {address || "Bãi đỗ xe"}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Vị trí: {lat.toFixed(6)}, {long.toFixed(6)}
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+        </MapContainer>
       </ErrorBoundary>
     </div>
   );
 }
 
-// Simple error boundary component
+// Enhanced error boundary component with better error handling
 class ErrorBoundary extends React.Component<{
   children: React.ReactNode;
   fallback: React.ReactNode;
+  onError?: () => void;
 }> {
   state = { hasError: false };
 
@@ -192,8 +194,11 @@ class ErrorBoundary extends React.Component<{
     return { hasError: true };
   }
 
-  componentDidCatch(error: any) {
-    console.error("Map error caught by ErrorBoundary:", error);
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Map error caught by ErrorBoundary:", error, errorInfo);
+    if (this.props.onError) {
+      this.props.onError();
+    }
   }
 
   render() {

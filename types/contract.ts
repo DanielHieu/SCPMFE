@@ -30,7 +30,8 @@ export enum ContractStatus {
   Active = "Active",
   Expired = "Expired",
   Inactive = "Inactive",
-  PendingActivation = "PendingActivation"
+  PendingActivation = "PendingActivation",
+  Cancelled = "Cancelled"
 }
 
 export interface AddContractPayload {

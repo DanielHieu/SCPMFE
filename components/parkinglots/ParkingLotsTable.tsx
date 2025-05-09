@@ -135,12 +135,12 @@ export function ParkingLotsTable({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-      // enable sorting etc. if needed
-   initialState: {
-          pagination: {
-              pageSize: 10, // Set a fixed number of items per page
-          },
+    // enable sorting etc. if needed
+    initialState: {
+      pagination: {
+        pageSize: 10, // Set a fixed number of items per page
       },
+    },
   });
 
   return (
@@ -155,9 +155,9 @@ export function ParkingLotsTable({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -191,36 +191,36 @@ export function ParkingLotsTable({
         </Table>
       </div>
       {/* Pagination Controls */}
-          {/*<div className="flex items-center justify-between space-x-2 p-4 border-t">*/}
-        {/* ... Pagination UI ... */}
-          {/*</div>*/}
-          {/* Pagination Controls */}
-          <div className="flex items-center justify-between px-6 py-3 border-t">
-              <div className="text-sm text-gray-500">
-                  Hiển thị {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
-                  {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, lots.length)} trong số {lots.length} 
-              </div>
-              <div className="space-x-2">
-                  <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => table.previousPage()}
-                      disabled={!table.getCanPreviousPage()}
-                      className="border-gray-200 text-gray-600"
-                  >
-                      Trước
-                  </Button>
-                  <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => table.nextPage()}
-                      disabled={!table.getCanNextPage()}
-                      className="border-gray-200 text-gray-600"
-                  >
-                      Tiếp
-                  </Button>
-              </div>
-          </div>
+      {/*<div className="flex items-center justify-between space-x-2 p-4 border-t">*/}
+      {/* ... Pagination UI ... */}
+      {/*</div>*/}
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between px-6 py-3 border-t">
+        <div className="text-sm text-gray-500">
+          Hiển thị {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+          {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, lots.length)} trong số {lots.length}
+        </div>
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className="border-gray-200 text-gray-600"
+          >
+            Trước
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className="border-gray-200 text-gray-600"
+          >
+            Tiếp
+          </Button>
+        </div>
+      </div>
     </>
   );
 }

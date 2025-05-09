@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   searchParkingLots,
   addParkingLot,
-  updateParkingLot,
+  updateParkingLot
 } from "@/lib/api";
 import {
   ParkingLot,
@@ -110,7 +110,6 @@ export default function ParkingLotsPage() {
       setIsLoading(false);
     }
   };
-
 
   // Calculate statistics
   const totalLots = parkingLots.length;

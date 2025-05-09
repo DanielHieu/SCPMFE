@@ -113,12 +113,6 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="password" className="text-sm font-medium">Mật khẩu</Label>
-                  <Link href="#" className="text-xs font-medium text-blue-600 hover:text-blue-800">
-                    Quên mật khẩu?
-                  </Link>
-                </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                     <Lock size={18} />
@@ -141,20 +135,6 @@ export default function LoginPage() {
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked === true)}
-                    className="data-[state=checked]:bg-blue-600"
-                  />
-                  <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
-                    Ghi nhớ đăng nhập
-                  </label>
                 </div>
               </div>
 
@@ -185,7 +165,7 @@ export default function LoginPage() {
           </CardContent>
           
           <CardFooter className="flex justify-center border-t pt-4 text-xs text-gray-500">
-            © {new Date().getFullYear()} SCPM Dashboard - v1.0.0
+            © {new Date().getFullYear()} SCPM Management - v1.0.0
           </CardFooter>
         </Card>
       </div>

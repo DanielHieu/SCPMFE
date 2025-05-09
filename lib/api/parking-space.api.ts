@@ -40,8 +40,16 @@ export async function deleteSpace(spaceId: number): Promise<void> {
 }
 
 export async function getParkingStatusSensors(
+  parkingLotId?: number
 ): Promise<ParkingStatusSensor[]> {
-  return await fetchApi(`/Sensor/GetAll`);
+  if (parkingLotId) {
+    return await fetchApi(`/Sensor/Search`, {
+      method: "POST",
+      body: JSON.stringify({ parkingLotId }),
+    });
+  } else {
+    return await fetchApi(`/Sensor/GetAll`);
+  }
 }
 
 export async function addParkingStatusSensor(

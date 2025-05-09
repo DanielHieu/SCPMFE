@@ -4,6 +4,10 @@ export interface ParkingStatusSensor {
     apiKey: string;
     parkingSpaceId: number;
     parkingSpaceName: string;
+    floorName: string;
+    areaName: string;
+    parkingLotName: string;
+    parkingLotAddress: string;
     status: string;
 }
 

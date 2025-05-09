@@ -105,7 +105,9 @@ export interface SummaryReportResponse {
   totalStaffs: number;
   totalContracts: number;
   totalWalkins: number;
-  
+  totalAvailableCustomers: number;
+  totalActiveContracts: number;
+
   totalRevenueInYear: number;
   totalRevenueInMonth: number;
   totalRevenueInWeek: number;
