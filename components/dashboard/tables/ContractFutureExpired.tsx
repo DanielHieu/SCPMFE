@@ -36,7 +36,7 @@ const ContractFutureExpired = () => {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Hợp đồng đang hiệu lực</CardTitle>
+                <CardTitle>Hợp đồng sắp hết hạn (còn dưới 10 ngày)</CardTitle>
             </CardHeader>
             <CardContent>
                 {isLoading ? (
@@ -90,5 +90,3 @@ const ContractFutureExpired = () => {
 }
 
 export default ContractFutureExpired;
-
-

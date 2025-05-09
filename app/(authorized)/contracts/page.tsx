@@ -59,13 +59,13 @@ export default function ContractsPage() {
     };
 
     // Fetch contracts data
-    const fetchContracts = async () => {
+    const fetchContracts = async (keyword = "") => {
         setIsLoading(true);
         setError(null);
         try {
             // Replace with actual API call
             const contracts = await searchContracts({
-                keyword: "",
+                keyword: keyword,
             });
 
             setContracts(contracts || []);
@@ -91,12 +91,23 @@ export default function ContractsPage() {
         fetchContracts();
     }, []);
 
+    // Add debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchContracts(searchTerm);
+        }, 1000); // Delay 500ms to avoid too many requests
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     // Filter contracts based on search term and filter status
     const filteredContracts = useMemo(() => {
         return contracts.filter((contract) => {
-            const matchesSearch =
-                contract.parkingSpaceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                contract.car.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesSearch = searchTerm === "" || 
+                contract.parkingSpaceName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                contract.car?.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                String(contract.contractId).includes(searchTerm) ||
+                contract.car?.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesFilter =
                 filterStatus === "All" ||
