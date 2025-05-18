@@ -199,9 +199,9 @@ export default function SensorsPage() {
             
             // Chuẩn bị dữ liệu để gửi đến API
             const payload = {
+                name: sensorData.name,
                 apiKey: sensorData.apiKey,
-                parkingSpaceId: sensorData.parkingSpaceId,
-                status: sensorData.status || "Active" // Sử dụng status đã chọn hoặc mặc định là "Active"
+                parkingSpaceId: sensorData.parkingSpaceId
             };
 
             // Gọi API để thêm cảm biến
@@ -226,7 +226,7 @@ export default function SensorsPage() {
     const handleUpdateSensor = async (sensorData: Partial<SensorWithUI>) => {
         try {
             // Kiểm tra các giá trị bắt buộc
-            if (!sensorData.apiKey || !sensorData.parkingStatusSensorId) {
+            if (!sensorData.apiKey || !sensorData.name || !sensorData.parkingStatusSensorId) {
                 toast.error("Thiếu thông tin cảm biến");
                 return;
             }
@@ -234,8 +234,8 @@ export default function SensorsPage() {
             // Chuẩn bị dữ liệu để gửi đến API
             const payload = {
                 parkingStatusSensorId: sensorData.parkingStatusSensorId,
-                apiKey: sensorData.apiKey,
-                status: sensorData.status
+                name: sensorData.name,
+                apiKey: sensorData.apiKey
             };
 
             // Gọi API để cập nhật cảm biến
@@ -275,7 +275,7 @@ export default function SensorsPage() {
 
         if (statusLower === "active") {
             return {
-                label: "Hoạt động",
+                label: "Cho phép",
                 variant: "default",
                 className: "bg-green-100 text-green-800"
             };
@@ -283,7 +283,7 @@ export default function SensorsPage() {
 
         if (statusLower === "inactive") {
             return {
-                label: "Không hoạt động",
+                label: "Không cho phép",
                 variant: "outline" as const,
                 className: "bg-red-100 text-red-800"
             };
@@ -426,13 +426,13 @@ export default function SensorsPage() {
                                 value="active"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
-                                Đang hoạt động ({counts.active})
+                                Cho phép ({counts.active})
                             </TabsTrigger>
                             <TabsTrigger
                                 value="inactive"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
-                                Không hoạt động ({counts.inactive})
+                                Không cho phép ({counts.inactive})
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
@@ -752,31 +752,6 @@ export default function SensorsPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="status" className="font-medium">Trạng thái</Label>
-                            <Select
-                                value={newSensor.status || "Active"}
-                                onValueChange={(value) => setNewSensor({ ...newSensor, status: value })}
-                            >
-                                <SelectTrigger id="status" className="w-full">
-                                    <SelectValue placeholder="Chọn trạng thái" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Active">
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                                            Hoạt động
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="Inactive">
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
-                                            Không hoạt động
-                                        </div>
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
                             <Label htmlFor="apiKey" className="font-medium">API Key</Label>
                             <div className="flex gap-2">
                                 <Input
@@ -839,16 +814,10 @@ export default function SensorsPage() {
                                 <Input
                                     id="sensorName"
                                     value={editingSensor.name}
-                                    readOnly
-                                    className="bg-gray-50"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="sensorLocation" className="font-medium">Vị trí</Label>
-                                <Input
-                                    id="sensorLocation"
-                                    value={editingSensor.parkingSpaceName}
-                                    readOnly
+                                    onChange={(e) => setEditingSensor({
+                                        ...editingSensor,
+                                        name: e.target.value
+                                    })}
                                     className="bg-gray-50"
                                 />
                             </div>
@@ -874,34 +843,6 @@ export default function SensorsPage() {
                                         Tạo mới
                                     </Button>
                                 </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="editStatus" className="font-medium">Trạng thái</Label>
-                                <Select
-                                    value={editingSensor.status}
-                                    onValueChange={(value) => setEditingSensor({
-                                        ...editingSensor,
-                                        status: value
-                                    })}
-                                >
-                                    <SelectTrigger id="editStatus" className="w-full">
-                                        <SelectValue placeholder="Chọn trạng thái" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Active">
-                                            <div className="flex items-center">
-                                                <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                                                Hoạt động
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="Inactive">
-                                            <div className="flex items-center">
-                                                <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
-                                                Không hoạt động
-                                            </div>
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
                             </div>
                         </div>
                     )}

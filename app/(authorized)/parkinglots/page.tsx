@@ -5,8 +5,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   searchParkingLots,
   addParkingLot,
-  updateParkingLot,
-  deleteParkingLot,
+  updateParkingLot
 } from "@/lib/api";
 import {
   ParkingLot,
@@ -109,20 +108,6 @@ export default function ParkingLotsPage() {
     } catch (err) {
       toast.error(`Lỗi: ${err instanceof Error ? err.message : "Không thể cập nhật bãi đỗ xe"}`);
       setIsLoading(false);
-    }
-  };
-
-  const handleDeleteClick = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa bãi đỗ xe này? Hành động này không thể hoàn tác.")) {
-      setIsLoading(true);
-      try {
-        await deleteParkingLot(id);
-        toast.success("Bãi đỗ xe đã được xóa thành công");
-        refreshData();
-      } catch (err) {
-        toast.error(`Lỗi: ${err instanceof Error ? err.message : "Không thể xóa bãi đỗ xe"}`);
-        setIsLoading(false);
-      }
     }
   };
 
@@ -260,7 +245,6 @@ export default function ParkingLotsPage() {
               <ParkingLotsTable
                 lots={parkingLots}
                 onEditAction={handleEditClick}
-                onDeleteAction={handleDeleteClick}
               />
             )}
           </div>

@@ -74,13 +74,15 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
     const getStatusText = (status: string) => {
         switch (status) {
             case ContractStatus.Active:
-                return "Đang hoạt động";
+                return "Đang hiệu lực";
             case ContractStatus.Expired:
-                return "Đã hết hạn";
+                return "Hết hiệu lực";
             case ContractStatus.Inactive:
                 return "Chờ xử lý";
             case ContractStatus.PendingActivation:
-                return "Chờ kích hoạt";
+                return "Chờ hiệu lực";
+            case ContractStatus.Cancelled:
+                return "Đã hủy";
             default:
                 return status;
         }
@@ -94,6 +96,8 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                 return "text-red-600 bg-red-50 border-red-200";
             case ContractStatus.Inactive:
                 return "text-yellow-600 bg-yellow-50 border-yellow-200";
+            case ContractStatus.Cancelled:
+                return "text-red-600 bg-red-50 border-red-200";
             default:
                 return "text-gray-600 bg-gray-50 border-gray-200";
         }
@@ -234,16 +238,16 @@ const ContractDetailComponent = ({ contractId }: { contractId: number }) => {
                                     <p className="mt-1">{contract.parkingLotName}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Vị trí</p>
-                                    <p className="mt-1">{contract.parkingSpaceName}</p>
-                                </div>
-                                <div>
                                     <p className="text-sm font-medium text-gray-500">Khu vực</p>
                                     <p className="mt-1">{contract.areaName || "Không có thông tin"}</p>
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-500">Tầng</p>
                                     <p className="mt-1">{contract.floorName || "Không có thông tin"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Vị trí</p>
+                                    <p className="mt-1">{contract.parkingSpaceName}</p>
                                 </div>
                                 <div className="md:col-span-2">
                                     <p className="text-sm font-medium text-gray-500">Địa chỉ</p>
