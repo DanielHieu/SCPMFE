@@ -184,7 +184,7 @@ export default function SensorsPage() {
         return sensors;
     }, [sensors, filterStatus]);
 
-    const refreshData = useCallback(() => {       
+    const refreshData = useCallback(() => {
         fetchSensors(debouncedSearchTerm);
     }, [debouncedSearchTerm, fetchSensors]);
 
@@ -196,7 +196,7 @@ export default function SensorsPage() {
                 toast.error("Thiếu thông tin cảm biến");
                 return;
             }
-            
+
             // Chuẩn bị dữ liệu để gửi đến API
             const payload = {
                 name: sensorData.name,
@@ -230,7 +230,7 @@ export default function SensorsPage() {
                 toast.error("Thiếu thông tin cảm biến");
                 return;
             }
-            
+
             // Chuẩn bị dữ liệu để gửi đến API
             const payload = {
                 parkingStatusSensorId: sensorData.parkingStatusSensorId,
@@ -240,9 +240,9 @@ export default function SensorsPage() {
 
             // Gọi API để cập nhật cảm biến
             await updateParkingStatusSensor(payload);
-            
+
             toast.success("Cập nhật cảm biến thành công");
-            
+
             // Cập nhật danh sách cảm biến
             refreshData();
             setIsEditModalOpen(false);
@@ -261,7 +261,7 @@ export default function SensorsPage() {
             });
 
             toast.success("Xóa cảm biến thành công");
-            
+
             // Cập nhật danh sách cảm biến sau khi xóa
             refreshData();
         } catch (err) {
@@ -275,7 +275,7 @@ export default function SensorsPage() {
 
         if (statusLower === "active") {
             return {
-                label: "Cho phép",
+                label: "ON",
                 variant: "default",
                 className: "bg-green-100 text-green-800"
             };
@@ -283,7 +283,7 @@ export default function SensorsPage() {
 
         if (statusLower === "inactive") {
             return {
-                label: "Không cho phép",
+                label: "OFF",
                 variant: "outline" as const,
                 className: "bg-red-100 text-red-800"
             };
@@ -426,13 +426,13 @@ export default function SensorsPage() {
                                 value="active"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
-                                Cho phép ({counts.active})
+                                ON ({counts.active})
                             </TabsTrigger>
                             <TabsTrigger
                                 value="inactive"
                                 className="rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-gray-600 data-[state=active]:text-blue-600 px-6"
                             >
-                                Không cho phép ({counts.inactive})
+                                OFF ({counts.inactive})
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
