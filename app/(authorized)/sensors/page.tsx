@@ -119,7 +119,7 @@ export default function SensorsPage() {
     };
 
     // Lấy dữ liệu cảm biến từ API
-    const fetchSensors = useCallback(async (term?: string) => {
+    const fetchSensors = async (term?: string) => {
         setIsLoading(true);
         setError(null);
         try {
@@ -166,12 +166,12 @@ export default function SensorsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    };
 
     // Effect để lấy dữ liệu khi từ khóa tìm kiếm thay đổi
     useEffect(() => {
         fetchSensors(debouncedSearchTerm);
-    }, [debouncedSearchTerm, fetchSensors]);
+    }, [debouncedSearchTerm]);
 
     // Lọc cảm biến dựa trên trạng thái
     const filteredSensors = useMemo(() => {
@@ -184,9 +184,9 @@ export default function SensorsPage() {
         return sensors;
     }, [sensors, filterStatus]);
 
-    const refreshData = useCallback(() => {
+    const refreshData = () => {
         fetchSensors(debouncedSearchTerm);
-    }, [debouncedSearchTerm, fetchSensors]);
+    };
 
     // Xử lý thêm cảm biến mới
     const handleAddSensor = async (sensorData: Partial<SensorWithUI>) => {
