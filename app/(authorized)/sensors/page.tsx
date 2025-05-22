@@ -63,6 +63,7 @@ export default function SensorsPage() {
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+    const [selectedParkingLotFilter, setSelectedParkingLotFilter] = useState<number | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingSensor, setEditingSensor] = useState<SensorWithUI | null>(null);
@@ -123,7 +124,7 @@ export default function SensorsPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await getParkingStatusSensors();
+            const data = await getParkingStatusSensors(selectedParkingLotFilter || undefined);
 
             // Kiểm tra xem data có phải là mảng không
             if (!Array.isArray(data)) {
@@ -168,10 +169,10 @@ export default function SensorsPage() {
         }
     };
 
-    // Effect để lấy dữ liệu khi từ khóa tìm kiếm thay đổi
+    // Effect để lấy dữ liệu khi từ khóa tìm kiếm thay đổi hoặc bộ lọc thay đổi
     useEffect(() => {
         fetchSensors(debouncedSearchTerm);
-    }, [debouncedSearchTerm]);
+    }, [debouncedSearchTerm, selectedParkingLotFilter]);
 
     // Lọc cảm biến dựa trên trạng thái
     const filteredSensors = useMemo(() => {
@@ -308,6 +309,11 @@ export default function SensorsPage() {
         }
     };
 
+    // Lấy danh sách bãi đỗ xe khi trang được tải
+    useEffect(() => {
+        fetchParkingLots();
+    }, []);
+
     // Lấy danh sách khu vực dựa trên bãi đỗ xe đã chọn
     const fetchAreas = async (lotId: number) => {
         try {
@@ -395,15 +401,24 @@ export default function SensorsPage() {
 
                 {/* Search section */}
                 <div className="px-6 pt-4 pb-2 border-b border-gray-200">
-                    <div className="flex justify-between items-center">
-                        <div className="relative w-full max-w-md">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                placeholder="Tìm kiếm cảm biến..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="h-10 pl-9 pr-4 w-full"
-                            />
+                    <div className="flex justify-between items-center gap-4">
+                        <div className="w-64">
+                            <Select
+                                value={selectedParkingLotFilter?.toString() || ""}
+                                onValueChange={(value) => setSelectedParkingLotFilter(value ? parseInt(value) : null)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Lọc theo bãi đỗ xe" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="0">Tất cả bãi đỗ xe</SelectItem>
+                                    {parkingLots.map(lot => (
+                                        <SelectItem key={lot.parkingLotId} value={lot.parkingLotId.toString()}>
+                                            {`${lot.parkingLotName} - ${lot.address}`}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <Button onClick={() => setIsAddModalOpen(true)}>
                             <PlusCircle className="h-4 w-4 mr-2" />
@@ -437,7 +452,6 @@ export default function SensorsPage() {
                         </TabsList>
                     </Tabs>
                 </div>
-
                 {/* Table area - no padding to connect directly with tabs */}
                 <div className="pb-0">
                     {isLoading && (
@@ -481,6 +495,7 @@ export default function SensorsPage() {
                                     <tr className="border-b">
                                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">ID</th>
                                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Tên</th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Bãi đỗ xe</th>
                                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Vị trí</th>
                                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Trạng thái</th>
                                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">API Key</th>
@@ -495,7 +510,22 @@ export default function SensorsPage() {
                                             <tr key={sensor.parkingStatusSensorId} className="border-b hover:bg-muted/50">
                                                 <td className="px-4 py-3 text-sm font-medium">{sensor.parkingStatusSensorId}</td>
                                                 <td className="px-4 py-3 text-sm">{sensor.name}</td>
-                                                <td className="px-4 py-3 text-sm">{sensor.parkingSpaceName}</td>
+                                                <td className="px-4 py-3 text-sm">
+                                                    <div>
+                                                        <div className="font-medium">{sensor.parkingLotName}</div>
+                                                        <div className="text-xs text-gray-500">{sensor.parkingLotAddress}</div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm">
+                                                    <div>
+                                                        <div>{sensor.parkingSpaceName}</div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {sensor.areaName && sensor.floorName ?
+                                                                `${sensor.areaName} / ${sensor.floorName}` :
+                                                                ""}
+                                                        </div>
+                                                    </div>
+                                                </td>
                                                 <td className="px-4 py-3">
                                                     <Badge
                                                         variant={statusDisplay.variant as any}
